@@ -166,6 +166,11 @@ SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1
 
 # Work out the directories and file lists
 APP_NAME ?= $(subst .,_,$(notdir $(abspath .)))
+
+ifeq ($(strip $(TARGET)),) 
+$(error No TARGET specified in application Makefile)
+endif
+
 ifeq ($(strip $(APP_NAME)),) 
 APP_NAME := $(subst .,_,$(notdir $(abspath .)))
 endif
