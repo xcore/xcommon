@@ -30,13 +30,18 @@
 
 BASE_DIR ?= .
 VERBOSE ?= 0
-AUTO_ECLIPSE ?= 0
+AUTO_ECLIPSE ?= 1
 XCC_C_FLAGS ?= $(XCC_FLAGS)
 XCC_CPP_FLAGS ?= $(XCC_FLAGS)
 XCC_XC_FLAGS ?= $(XCC_FLAGS)
 XCC_ASM_FLAGS ?= $(XCC_FLAGS)
 XCC_MAP_FLAGS ?= $(XCC_FLAGS)
 
+ifneq ($(DISABLE_WALL),1) 
+XCC_FLAGS += -Wall
+endif
+
+EXTRA_C_OPTIONS = -fno-strict-aliasing
 
 # Define some generic OS functions
 ifeq ($(OS),WINDOWS)
@@ -140,8 +145,8 @@ IS_MODULE_DIR = $(filter %::,$(subst ::,:: ,$1))
 GET_MODULE_DIR = $(call FIND_MODULE,$(word 1,$(subst ::, ,$1)))/$(word 2,$(subst ::, ,$1))
 
 
-REMOVE_MODULE_VERSION = $(strip $(subst .,,$(filter %.,$(subst .,. ,$1))))
-GET_MODULE_VERSION = $(strip $(subst .,,$(filter .%,$(subst ., .,$1))))
+REMOVE_MODULE_VERSION = $(if $(findstring .,$1),$(strip $(subst .,,$(firstword $(subst .,. ,$1)))),$1)
+GET_MODULE_VERSION = $(if $(findstring .,$1),$(strip $(patsubst $(call REMOVE_MODULE_VERSION,$1).%,%,$1)),)
 
 SEARCH_FOR_MODULE = $(strip $(filter %$1,$(CANDIDATE_MODULES)))
 
@@ -281,7 +286,9 @@ HEADER_STATUS_FILES = $(HEADER_DEP_FILES:%.dh=%.hstat)
 
 INCLUDE_FLAGS = $(foreach x,$(QUOTED_INCLUDE_DIRS),-I$x)
 
+OPTIONAL_HEADER_FLAG=$(if $(filter $1,$(NOTDIR_HEADER_FILES)),-D__$(strip $(subst .,_,$1))_exists__=1,)
 
+OPTIONAL_HEADER_FLAGS=$(foreach x,$(OPTIONAL_HEADERS),$(call OPTIONAL_HEADER_FLAG,$x))
 
 VPATH = $(FULL_SOURCE_DIRS) 
 VPATH += $(FULL_INCLUDE_DIRS)
@@ -374,19 +381,19 @@ endif
 
 $(TARGET_DIR)/%.o : %.xc $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
-	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
+	cd $(TARGET_DIR) && $(XCC) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
 $(TARGET_DIR)/%.o :  %.c $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
-	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
+	cd $(TARGET_DIR) && $(XCC) $(EXTRA_C_OPTIONS) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
 $(TARGET_DIR)/%.o :  %.cpp $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
-	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
+	cd $(TARGET_DIR) && $(XCC) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
 $(TARGET_DIR)/%.o :  %.S $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
-	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
+	cd $(TARGET_DIR) && $(XCC) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
 $(TARGET_DIR)/%.o : %.s $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
@@ -472,19 +479,19 @@ else
 
 $(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(INCLUDE_FLAGS) ../$< > $(NULL)
+	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) ../$< > $(NULL)
 
 $(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
+	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 
 $(TARGET_DIR)/%.d : %.cpp | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
+	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 
 $(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
+	@cd $(TARGET_DIR) && $(XCC) -x xc -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 
 ifneq ($(MAKECMDGOALS),clean)
  -include $(DEP_FILES_0)
