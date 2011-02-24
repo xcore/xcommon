@@ -1,5 +1,5 @@
-###########################################
-# XMOS COMMON MAKEFILE
+###########################################################
+# COMMON MAKEFILE FOR BUILDING XMOS/XCORE CODE REPOSITORIES
 #
 # Include this makefile *after* defining the following variables
 #
@@ -54,7 +54,10 @@ WINFLAG=0
 endif
 endif
 
-MODULE_XMOS_COMMON_DIR ?= $(BASE_DIR)/../module_xmos_common
+
+XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
+
+MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
 ifeq ($(WINFLAG),1)
 CP=copy $(subst /,\,$(1))
@@ -67,8 +70,8 @@ OS=WINDOWS
 SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
 USE_XDEP=1
-XDEP ?= $(call TO_OS, $(MODULE_XMOS_COMMON_DIR)/build/xdep.exe)
-AUTO_PROJ ?= $(call TO_OS, $(MODULE_XMOS_COMMON_DIR)/build/auto_proj.exe)
+XDEP ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
+AUTO_PROJ ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/auto_proj.exe)
 else
 CP=cp $(1)
 RM=rm -f $(1)
@@ -79,8 +82,8 @@ CAT=cat
 OS=UNIX
 TO_OS=$(1)
 USE_XDEP=0
-XDEP ?= wine $(call TO_OS, $(MODULE_XMOS_COMMON_DIR)/build/xdep.exe)
-AUTO_PROJ ?= wine $(call TO_OS, $(MODULE_XMOS_COMMON_DIR)/build/auto_proj.exe)
+XDEP ?= wine $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
+AUTO_PROJ ?= wine $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/auto_proj.exe)
 endif
 
 
