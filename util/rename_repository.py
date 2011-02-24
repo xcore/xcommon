@@ -1,5 +1,7 @@
 #!/usr/bin/python
 from optparse import OptionParser
+from stat import ST_MODE
+from stat import S_IWRITE
 import os
 import subprocess
 
@@ -19,8 +21,14 @@ def rmrf_dir(path):
     Recursively delete everything under a subdir. Use with care
     """
     for root, dirs, files in os.walk(".git", topdown=False):
-        for f in files: os.remove(os.path.join(root,f))
-        for d in dirs: os.rmdir(os.path.join(root,d))
+        for f in files:
+	    p = os.path.join(root,f)
+	    os.chmod(p, os.stat(p)[ST_MODE] | S_IWRITE)
+	    os.remove(p)
+        for d in dirs:
+	    p = os.path.join(root,d)
+	    os.chmod(p, os.stat(p)[ST_MODE] | S_IWRITE)
+	    os.rmdir(p)
     os.rmdir(path)
 
 
