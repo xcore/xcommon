@@ -69,7 +69,7 @@ have made to the repository.
     rmrf_dir(".git")
     os.system("git init")
     
-    new_remote = 'ssh://git@github.com:22/xmos/%s.git' % newname
+    new_remote = 'ssh://git@github.com:22/xcore/%s.git' % newname
     print "Changing remote origin of git repository to:\n%s" % new_remote
     os.system('git remote add origin %s' % new_remote)
 
