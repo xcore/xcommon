@@ -1,7 +1,7 @@
 XCommon: common build infrastructure
-....................................
+.................................
 
-:Last_stable_release:   unreleased
+:Stable release:   unreleased
 
 :Status:  Feature complete
 
