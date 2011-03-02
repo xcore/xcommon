@@ -169,9 +169,10 @@ if __name__ == "__main__":
             for path in missing_copyright_files:
                 insert_copyright(path, standard_copyright)
             print "Done."
-        
-    print "The following files have a non-standard copyright notice:\n"
+
+    if non_standard_copyright_files != []:
+        print "The following files have a non-standard copyright notice:\n"
     
-    for path in non_standard_copyright_files:
-        print "    " + path[2:]
+        for path in non_standard_copyright_files:
+            print "    " + path[2:]
 
