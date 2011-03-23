@@ -21,7 +21,7 @@ Overview
 ========
 
 This repository does not contain any code. It contains the common
-Makefiles to allow other repositories to build. 
+Makefiles to allow other repositories to build. Some instructions on using the system can be found at https://github.com/xcore/Community/wiki/Repository-usage
 
 Known Issues
 ============
