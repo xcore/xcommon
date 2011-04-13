@@ -440,12 +440,11 @@ else
 ECLIPSE_CONFIG=
 endif
 
-ifeq ($(PREBUILD_MAKEFILES),)
+ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
 
 ifeq ($(NO_PREBUILD),1) 
-
 ifeq ($(VERBOSE),1)
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ 
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(addprefix ../, $(OBJ_FILES)) $(addprefix ../, $(XN_SOURCE_FILES)) $(addprefix ../, $(XTA_SOURCE_FILES)) -o ../$@
