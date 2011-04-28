@@ -69,8 +69,6 @@ CAT=type
 OS=WINDOWS
 SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
-USE_XDEP=0
-XDEP ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
 CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 CP=cp $(1)
@@ -82,8 +80,6 @@ NULL=/dev/null
 CAT=cat
 OS=UNIX
 TO_OS=$(1)
-USE_XDEP=0
-XDEP ?= wine $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
 CHANGEDEP = sed $(TARGET_DIR)/$(notdir $1) -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/\.\.\//.\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g"  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
@@ -328,19 +324,6 @@ OPTIONAL_HEADER_FLAGS=$(foreach x,$(OPTIONAL_HEADERS),$(call OPTIONAL_HEADER_FLA
 VPATH += $(FAKE_INC_DIR)
 VPATH += ./../..
 
-ifeq ($(USE_XDEP),1)
-ifeq ($(WINFLAG),1)
-SYS_INCLUDE = $(subst \,/,$(subst ;, ,$(subst Program Files,PROGRA~2,$(subst Program Files (x86),PROGRA~2,$(1))))) $(subst \,/,$(subst ;, ,$(subst Program Files,PROGRA~1,$(subst Program Files (x86),PROGRA~1,$(1)))))
-VPATH += $(call SYS_INCLUDE, $(XCC_C_INCLUDE_PATH))
-VPATH += $(call SYS_INCLUDE, $(XCC_XC_INCLUDE_PATH))
-VPATH += $(call SYS_INCLUDE, $(XCC_ASM_INCLUDE_PATH))
-else
-SYS_INCLUDE = $(subst :, ,$1)
-VPATH += $(call SYS_INCLUDE, $(XCC_C_INCLUDE_PATH))
-VPATH += $(call SYS_INCLUDE, $(XCC_XC_INCLUDE_PATH))
-VPATH += $(call SYS_INCLUDE, $(XCC_ASM_INCLUDE_PATH))
-endif
-endif
 
 
 LIB_FILES = $(foreach x, $(FULL_LIB_DIRS), $(wildcard $x/xs1b/lib*.a))
@@ -467,44 +450,6 @@ $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 endif
 
 
-# Dependency generation
-
-ifeq ($(USE_XDEP),1)
-
-$(TARGET_DIR)/%.hstat: %.h
-	@echo hstat > $@
-
-$(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
-	@echo Creating dependencies for $(notdir $<)
-	@-$(call MKDIR, $(dir $@))
-	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<))  < $(call TO_OS,$<) > $(call TO_OS,$@)
-
-$(TARGET_DIR)/%.dh : %.h | $(TARGET_DIR)/
-	@echo Creating dependencies for $(notdir $<)
-	@-$(call MKDIR, $(dir $@))
-	@$(XDEP) $(notdir $<) $(patsubst %.dh, %.hstat, $@) < $(call TO_OS,$<) > $(call TO_OS,$@)
-
-$(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
-	@echo Creating dependencies for $(notdir $<)
-	@-$(call MKDIR, $(dir $@))
-	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<)) < $(call TO_OS,$<) > $(call TO_OS,$@)
-
-$(TARGET_DIR)/%.d : %.cpp | $(TARGET_DIR)/
-	@echo Creating dependencies for $(notdir $<)
-	@-$(call MKDIR, $(dir $@))
-	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<)) < $(call TO_OS,$<) > $(call TO_OS,$@)
-
-$(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
-	@echo Creating dependencies for $(notdir $<)
-	@-$(call MKDIR, $(dir $@))
-	@$(XDEP) $(notdir $HEADER_DEP_FILES = $(patsubst %.h, %.dh, $(foreach x, $(HEADER_FILES), $(TARGET_DIR)/$(notdir $x)))
-
-ifneq ($(MAKECMDGOALS),clean)
--include $(DEP_FILES_0)
-include $(HEADER_DEP_FILES)
-endif
-
-else
 
 $(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
@@ -540,8 +485,6 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 
-
-endif
 
 .PRECIOUS: $(OBJ_FILES)
 .SECONDARY: $(OBJ_FILES)
