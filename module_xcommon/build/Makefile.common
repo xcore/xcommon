@@ -30,7 +30,6 @@
 
 BASE_DIR ?= .
 VERBOSE ?= 0
-AUTO_ECLIPSE ?= 0
 XCC_C_FLAGS ?= $(XCC_FLAGS)
 XCC_CPP_FLAGS ?= $(XCC_FLAGS)
 XCC_XC_FLAGS ?= $(XCC_FLAGS)
@@ -61,18 +60,18 @@ MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
 ifeq ($(WINFLAG),1)
 CP=copy $(subst /,\,$(1))
-MV=move $(subst /,\,$(1))
+MV=move /Y $(subst /,\,$(1))
 RM=cmd /c if exist "$(subst /,\,$(1))" del /Q /F "$(subst /,\,$(1))"
 RMRF=cmd /c if exist "$(subst /,\,$(1))" RMDIR /S /Q "$(subst /,\,$(1))"
-MKDIR=cmd /c if not exist $(subst /,\,$(1)) mkdir $(subst /,\,$(1))
+MKDIR=cmd /c mkdir $(subst /,\,$(1)) 2> nul
 NULL=nul
 CAT=type
 OS=WINDOWS
 SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
-USE_XDEP=1
+USE_XDEP=0
 XDEP ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
-AUTO_PROJ ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/auto_proj.exe)
+CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" "../.." "./.." "$(abspath ..)" "./.."  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 CP=cp $(1)
 MV=mv $(1)
@@ -85,7 +84,7 @@ OS=UNIX
 TO_OS=$(1)
 USE_XDEP=0
 XDEP ?= wine $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
-AUTO_PROJ ?= wine $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/auto_proj.exe)
+CHANGEDEP = sed $(TARGET_DIR)/$(notdir $1) -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/\.\.\//.\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g"  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
 
@@ -175,15 +174,16 @@ SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1
 
 
 # Work out the directories and file lists
-APP_NAME ?= $(subst .,_,$(notdir $(abspath .)))
+APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
 
 ifeq ($(strip $(TARGET)),) 
 $(error No TARGET specified in application Makefile)
 endif
 
 ifeq ($(strip $(APP_NAME)),) 
-APP_NAME := $(subst .,_,$(notdir $(abspath .)))
+APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
+
 BUILD_NAME ?= $(TARGET)
 WORKING_DIR ?= .build_$(BUILD_NAME)
 TARGET_DIR = ./$(WORKING_DIR)
@@ -432,30 +432,9 @@ $(TARGET_DIR)/%.o : %.s $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	@echo Compiling $(notdir $<)
 	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
-.PHONY: eclipse_config
 
 
-ifeq ($(WINFLAG),0)
-ECLIPSE_PROJECTS = $(foreach m,$(USED_MODULES), <project>$(call REMOVE_MODULE_VERSION,$m)<\/project>)
-eclipse_config:
-	@echo "Updating eclipse config"
-	@sed -e 's/<project>.*<\/project>//g' < .project > .tmpproject
-	@sed -i -e 's/<projects>/<projects>$(ECLIPSE_PROJECTS)/g' .tmpproject
-	@$(call CP,.tmpproject .project)
-	@$(call RM,.tmpproject)
-else
-ECLIPSE_PROJECTS = $(foreach m,$(USED_MODULES), <project>$(call REMOVE_MODULE_VERSION,$m)</project>)
-eclipse_config:
-	@echo "Updating eclipse config"
-	@$(AUTO_PROJ) "$(ECLIPSE_PROJECTS)" < .project > .tmpproject
-	@cmd /c more .tmpproject > .project
-endif
 
-ifeq ($(AUTO_ECLIPSE),1)
-ECLIPSE_CONFIG=eclipse_config
-else
-ECLIPSE_CONFIG=
-endif
 
 
 ifeq ($(strip $(PREBUILD_MAKEFILES)),)
@@ -464,10 +443,10 @@ endif
 
 ifeq ($(NO_PREBUILD),1) 
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ 
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(BIN_DIR)/ 
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(addprefix ../, $(OBJ_FILES)) $(addprefix ../, $(XN_SOURCE_FILES)) $(addprefix ../, $(XTA_SOURCE_FILES)) -o ../$@
 else
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ 
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(BIN_DIR)/ 
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(addprefix ../, $(OBJ_FILES)) $(addprefix ../, $(XN_SOURCE_FILES)) $(addprefix ../, $(XTA_SOURCE_FILES))  -o ../$@
 endif
@@ -495,29 +474,28 @@ $(TARGET_DIR)/%.hstat: %.h
 
 $(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@$(call MKDIR, $(dir $@))
+	@-$(call MKDIR, $(dir $@))
 	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<))  < $(call TO_OS,$<) > $(call TO_OS,$@)
 
 $(TARGET_DIR)/%.dh : %.h | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@$(call MKDIR, $(dir $@))
+	@-$(call MKDIR, $(dir $@))
 	@$(XDEP) $(notdir $<) $(patsubst %.dh, %.hstat, $@) < $(call TO_OS,$<) > $(call TO_OS,$@)
 
 $(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@$(call MKDIR, $(dir $@))
+	@-$(call MKDIR, $(dir $@))
 	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<)) < $(call TO_OS,$<) > $(call TO_OS,$@)
 
 $(TARGET_DIR)/%.d : %.cpp | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@$(call MKDIR, $(dir $@))
+	@-$(call MKDIR, $(dir $@))
 	@$(XDEP) $(notdir $<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<)) < $(call TO_OS,$<) > $(call TO_OS,$@)
 
 $(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
-	@$(call MKDIR, $(dir $@))
+	@-$(call MKDIR, $(dir $@))
 	@$(XDEP) $(notdir $HEADER_DEP_FILES = $(patsubst %.h, %.dh, $(foreach x, $(HEADER_FILES), $(TARGET_DIR)/$(notdir $x)))
-<) $(TARGET_DIR)/$(call TO_OBJ,$(notdir $<)) < $(call TO_OS,$<) > $(call TO_OS,$@)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(DEP_FILES_0)
@@ -529,38 +507,33 @@ else
 $(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) ../$< > $(NULL)
-	@$(call MKDIR, $(dir $@))
-	@$(call MV, $(TARGET_DIR)/$(notdir $@) $@)
+	@-$(call MKDIR, $(dir $@))
+	@$(call CHANGEDEP,$@,$<)
+
 
 $(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
-	@$(call MKDIR, $(dir $@))
-	@$(call MV, $(TARGET_DIR)/$(notdir $@) $@)
-
+	@-$(call MKDIR, $(dir $@))
+	@$(call CHANGEDEP,$@,$<)
 
 $(TARGET_DIR)/%.d : %.cpp | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
-	@$(call MKDIR, $(dir $@))
-	@$(call MV, $(TARGET_DIR)/$(notdir $@) $@)
-
+	@-$(call MKDIR, $(dir $@))
+	@$(call CHANGEDEP,$@,$<)
 
 $(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
-	@$(call MKDIR, $(dir $@))
-	@$(call MV, $(TARGET_DIR)/$(notdir $@) $@)
+	@-$(call MKDIR, $(dir $@))
+	@$(call CHANGEDEP,$@,$<)
 
 
 ifneq ($(MAKECMDGOALS),clean)
  -include $(DEP_FILES_0)
 endif
 
- $(foreach obj,$(OBJ_FILES),$(eval DEP_FILE_$(obj) = $(subst \,,$(shell $(CAT) $(patsubst %.o,%.d,$(obj)) 2> $(NULL) ))))
-
-
-$(foreach obj,$(OBJ_FILES),$(eval $(patsubst ../%,./%,$(patsubst %.o:,$(obj) $(obj:.o=.d):,$(DEP_FILE_$(obj))))))
 
 
 endif
@@ -589,4 +562,3 @@ clean_fake_includes : | $(FAKE_INC_DIR)/
 	@-$(call RMRF,$(FAKE_INC_DIR))
 
 all: clean_fake_includes 
-
