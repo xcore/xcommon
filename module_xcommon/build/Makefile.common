@@ -418,10 +418,6 @@ $(TARGET_DIR)/%.o : %.s $(XN_SOURCE_FILES) | $(TARGET_DIR)
 	cd $(TARGET_DIR) && $(XCC) -c $(INCLUDE_FLAGS) $(call make_flags,$<) ../$< $(addprefix ../, $(XN_SOURCE_FILES)) -o ../$@
 
 
-
-
-
-
 ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
