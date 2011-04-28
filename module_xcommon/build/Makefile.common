@@ -63,7 +63,7 @@ CP=copy $(subst /,\,$(1))
 MV=move /Y $(subst /,\,$(1))
 RM=cmd /c if exist "$(subst /,\,$(1))" del /Q /F "$(subst /,\,$(1))"
 RMRF=cmd /c if exist "$(subst /,\,$(1))" RMDIR /S /Q "$(subst /,\,$(1))"
-MKDIR=cmd /c mkdir $(subst /,\,$(1)) 2> nul
+MKDIR=$(MODULE_XCOMMON_DIR)/build/mkdir.bat $(subst /,\,$(1)) 2> nul
 NULL=nul
 CAT=type
 OS=WINDOWS
@@ -71,7 +71,7 @@ SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
 USE_XDEP=0
 XDEP ?= $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/xdep.exe)
-CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" "../.." "./.." "$(abspath ..)" "./.."  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 CP=cp $(1)
 MV=mv $(1)
@@ -397,12 +397,14 @@ $(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $
 endef
 
 ifeq ($(WINFLAG),1)
-$(HEADER_FILES):
-	@rem
+NOP = rem
 else
-$(HEADER_FILES):
-	@echo -n
+NOP = echo -n
 endif
+
+
+$(HEADER_FILES):
+	@$(NOP)
 
 ifneq ($(VERBOSE),1)
 .SILENT: $(OBJ_FILES) $(BIN_DIR) $(TARGET_DIR) $(FAKE_INC_DIR)
@@ -509,6 +511,7 @@ $(TARGET_DIR)/%.d : %.xc | $(TARGET_DIR)/
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) ../$< > $(NULL)
 	@-$(call MKDIR, $(dir $@))
 	@$(call CHANGEDEP,$@,$<)
+	@$(NOP)
 
 
 $(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
@@ -516,19 +519,21 @@ $(TARGET_DIR)/%.d : %.c | $(TARGET_DIR)/
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 	@-$(call MKDIR, $(dir $@))
 	@$(call CHANGEDEP,$@,$<)
+	@$(NOP)
 
 $(TARGET_DIR)/%.d : %.cpp | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 	@-$(call MKDIR, $(dir $@))
 	@$(call CHANGEDEP,$@,$<)
+	@$(NOP)
 
 $(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
 	@echo Creating dependencies for $(notdir $<)
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$(realpath $<)" > $(NULL)
 	@-$(call MKDIR, $(dir $@))
 	@$(call CHANGEDEP,$@,$<)
-
+	@$(NOP)
 
 ifneq ($(MAKECMDGOALS),clean)
  -include $(DEP_FILES_0)
