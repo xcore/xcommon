@@ -58,6 +58,8 @@ XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.common,$(MAKE
 
 MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
+SP = 
+
 ifeq ($(WINFLAG),1)
 CP=copy $(subst /,\,$(1))
 MV=move /Y $(subst /,\,$(1))
@@ -69,7 +71,7 @@ CAT=type
 OS=WINDOWS
 SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
-CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 CP=cp $(1)
 MV=mv $(1)
@@ -327,7 +329,10 @@ VPATH += ./../..
 
 
 LIB_FILES = $(foreach x, $(FULL_LIB_DIRS), $(wildcard $x/xs1b/lib*.a))
-LIB_FLAGS = $(foreach x,$(FULL_LIB_DIRS), -L $(call TO_OS, ../$x)) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
+LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
+#remove duplicates
+LIB_DIRS := $(sort $(LIB_DIRS))
+LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L $(call TO_OS, ../$x)) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
 
 # Make rules for directories
 
@@ -421,6 +426,7 @@ $(TARGET_DIR)/%.o : %.s $(XN_SOURCE_FILES) | $(TARGET_DIR)
 ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
+
 
 ifeq ($(NO_PREBUILD),1) 
 ifeq ($(VERBOSE),1)
