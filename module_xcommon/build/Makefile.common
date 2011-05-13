@@ -82,7 +82,7 @@ NULL=/dev/null
 CAT=cat
 OS=UNIX
 TO_OS=$(1)
-CHANGEDEP = sed $(TARGET_DIR)/$(notdir $1) -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/\.\.\//.\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g"  > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = sed  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/\.\.\//.\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g" $(TARGET_DIR)/$(notdir $1) > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
 
