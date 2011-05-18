@@ -82,7 +82,7 @@ NULL=/dev/null
 CAT=cat
 OS=UNIX
 TO_OS=$(1)
-CHANGEDEP = sed  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/\.\.\//.\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g" $(TARGET_DIR)/$(notdir $1) > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = sed  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/ \.\.\// .\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g" $(TARGET_DIR)/$(notdir $1) > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
 
@@ -95,20 +95,22 @@ IS_DIR = $(wildcard $1/*)
 KEEP_IF_DIR = $(if $(call IS_DIR,$1),$1,)
 
 SEARCH_DIR := $(BASE_DIR)/../..
+REL_SEARCH_DIR := ./../..
 
-MAKEFILE_COMMON = $(filter %module_xmos_common/build/Makefile.common,$(MAKEFILE_LIST))
+MAKEFILE_COMMON = $(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
 
 MAKEFILE_COMMON_DIR = $(patsubst %/build/Makefile.common,%,$(MAKEFILE_COMMON))
 
 
 ifeq ($(abspath $(MAKEFILE_COMMON_DIR)/..),$(abspath $(BASE_DIR)/..))
 SEARCH_DIR := $(BASE_DIR)/..
+REL_SEARCH_DIR := ./..
 endif
 
 ifeq ($(abspath $(MAKEFILE_COMMON_DIR)/../..),$(abspath $(BASE_DIR)/..))
 SEARCH_DIR := $(BASE_DIR)/..
+REL_SEARCH_DIR := ./..
 endif
-
 
 CANDIDATE_MODULES = $(foreach x,$(wildcard $(SEARCH_DIR)/*),$(call KEEP_IF_DIR,$x)) $(foreach x,$(wildcard $(SEARCH_DIR)/*),$(foreach y,$(wildcard $x/*),$(call KEEP_IF_DIR,$y)))
 
@@ -257,7 +259,7 @@ endef
 
 $(foreach x,$(USED_MODULES),$(eval $(call INCLUDE_MODULE,$x)))
 
-TO_BUILD_DIR = $(patsubst td/%,$(TARGET_DIR)/%,$(patsubst ./%,td/%,$(patsubst ./../../%,td/%,$1)))
+TO_BUILD_DIR = $(patsubst td/%,$(TARGET_DIR)/%,$(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1))))
 
 EXCLUDE_PATTERN = $(foreach x, $(EXCLUDE_FILES), %$x)
 
@@ -301,7 +303,7 @@ SOURCE_FILES = $(C_SOURCE_FILES) $(CPP_SOURCE_FILES) $(XC_SOURCE_FILES) $(ASM_SO
 
 
 OBJ_FILES := $(C_OBJ_FILES) $(XC_OBJ_FILES) $(ASM_OBJ_FILES) $(CPP_OBJ_FILES) 
-OBJ_FILES := $(patsubst ./../../%,td/%,$(OBJ_FILES))
+OBJ_FILES := $(patsubst $(REL_SEARCH_DIR)/%,td/%,$(OBJ_FILES))
 OBJ_FILES := $(patsubst ./%,td/%,$(OBJ_FILES))
 OBJ_FILES := $(patsubst td/%,$(TARGET_DIR)/%,$(OBJ_FILES))
 OBJ_FILES := $(OBJ_FILES) $(OBJ_SOURCE_FILES)
@@ -310,6 +312,7 @@ DEP_FILES_0 = $(CPP_DEP_FILES) $(C_DEP_FILES) $(XC_DEP_FILES) $(ASM_DEP_FILES)
 DEP_FILES = $(patsubst %.d, %.0.d, $(DEP_FILES_0))
 
 HEADER_FILES = $(filter-out $(EXCLUDE_FILES),$(foreach x, $(FULL_INCLUDE_DIRS), $(wildcard $x/*.h)))
+
 
 NOTDIR_HEADER_FILES = $(foreach x,$(HEADER_FILES),$(notdir $x))
 
@@ -324,7 +327,8 @@ OPTIONAL_HEADER_FLAG=$(if $(filter $1,$(NOTDIR_HEADER_FILES)),-D__$(strip $(subs
 OPTIONAL_HEADER_FLAGS=$(foreach x,$(OPTIONAL_HEADERS),$(call OPTIONAL_HEADER_FLAG,$x))
 
 VPATH += $(FAKE_INC_DIR)
-VPATH += ./../..
+VPATH += $(SEARCH_DIR)
+
 
 
 
@@ -481,6 +485,7 @@ $(TARGET_DIR)/%.d : %.S | $(TARGET_DIR)/
 	@-$(call MKDIR, $(dir $@))
 	@$(call CHANGEDEP,$@,$<)
 	@$(NOP)
+
 
 ifneq ($(MAKECMDGOALS),clean)
  -include $(DEP_FILES_0)
