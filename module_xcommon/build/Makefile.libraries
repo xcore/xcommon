@@ -1,0 +1,28 @@
+export LIBRARIES
+
+XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.libraries,$(MAKEFILE_LIST))
+
+MODULE_XCOMMON_DIR = $(patsubst %/Makefile.libraries,%,$(XCOMMON_MAKEFILE))/..
+
+include module_build_info
+
+%.all: 
+	@echo Bulding $*
+	@make LIBRARY=$* --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library all
+
+%.clean: 
+	@echo Cleaning $*
+	@make LIBRARY=$* --no-print-directory  -f $(MODULE_XCOMMON_DIR)/build/Makefile.library clean
+
+%.export: 
+	@echo Exporting $*
+
+all: $(foreach lib, $(LIBRARIES), $(lib).all)
+	@echo Built all libraries
+
+clean: $(foreach lib, $(LIBRARIES), $(lib).clean)
+	@echo Done
+
+export: $(foreach lib, $(LIBRARIES), $(lib).all)
+	@make LIBRARY=$(firstword $(LIBRARIES)) --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library export
+	@echo Done

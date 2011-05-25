@@ -28,10 +28,9 @@ WINFLAG=0
 endif
 endif
 
+XCOMMON_MAKEFILE = $(filter %Makefile.library,$(MAKEFILE_LIST))
 
-XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
-
-MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
+MODULE_XCOMMON_DIR = $(patsubst %/Makefile.library,%,$(XCOMMON_MAKEFILE))/..
 
 ifeq ($(WINFLAG),1)
 CP=copy $(subst /,\,$(1))
@@ -131,17 +130,36 @@ endif
 ARCH ?= xs1b
 
 BUILD_NAME ?= $(ARCH)
-WORKING_DIR ?= .build_$(BUILD_NAME)
+WORKING_DIR ?= .build_$(LIBRARY)
 TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(BUILD_NAME)
 LIB_DIR=$(BASE_DIR)/lib/$(BUILD_NAME)
 
+
+
+
 FULL_INCLUDE_DIRS := $(foreach x, $(INCLUDE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_SOURCE_DIRS := $(foreach x, $(SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_LIB_DIRS := $(foreach x, $(LIB_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 
+
+FULL_INCLUDE_DIRS := $(filter-out ./export%, $(FULL_INCLUDE_DIRS))
+FULL_SOURCE_DIRS := $(filter-out ./export%, $(FULL_INCLUDE_DIRS))
+
+FULL_EXPORT_DIRS := $(foreach x, $(EXPORT_SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
+
+
+FULL_SOURCE_DIRS := $(if $(LIBRARY), $(filter-out $(FULL_EXPORT_DIRS), $(FULL_SOURCE_DIRS)), $(FULL_SOURCE_DIRS))
+
+LIB_XCC_FLAGS := $(LIB_XCC_FLAGS) $(LIB_XCC_FLAGS_$(LIBRARY))
+
+MODULE_XCC_FLAGS     := $(if $(LIB_XCC_FLAGS),$(LIB_XCC_FLAGS),$(MODULE_XCC_FLAGS))
+MODULE_XCC_C_FLAGS   := $(if $(LIB_XCC_C_FLAGS),$(LIB_XCC_C_FLAGS),$(MODULE_XCC_C_FLAGS))
+MODULE_XCC_CPP_FLAGS := $(if $(LIB_XCC_CPP_FLAGS),$(LIB_XCC_CPP_FLAGS),$(MODULE_XCC_CPP_FLAGS))
+MODULE_XCC_XC_FLAGS  := $(if $(LIB_XCC_XC_FLAGS),$(LIB_XCC_XC_FLAGS),$(MODULE_XCC_XC_FLAGS))
+MODULE_XCC_ASM_FLAGS := $(if $(LIB_XCC_ASM_FLAGS),$(LIB_XCC_ASMFLAGS),$(MODULE_XCC_ASM_FLAGS))
 
 $(if $(MODULE_XCC_FLAGS), $(call SET_XCC_FLAGS, $(SOURCE_DIRS), $(MODULE_XCC_FLAGS)),)
 $(if $(MODULE_XCC_C_FLAGS), $(call SET_XCC_C_FLAGS, $(SOURCE_DIRS), $(MODULE_XCC_C_FLAGS)),)
@@ -445,10 +463,10 @@ $(EXPORT_DIR):
 	@echo Creating export directory
 	@$(call MKDIR,$(EXPORT_DIR))	
 
-$(EXPORT_LIB_DIR)/lib$(LIBRARY).a:
+$(EXPORT_LIB_DIR)/lib%.a:
 	@$(call MKDIR,$(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME))	
 	@echo Copying library
-	@$(call CP,$(LIB_DIR)/lib$(LIBRARY).a $(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME)/lib$(LIBRARY).a)
+	@$(call CP,$(LIB_DIR)/lib$*.a $(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME)/lib$*.a)
 
 
 %.export:
@@ -462,7 +480,21 @@ $(EXPORT_DIR)/module_build_info:
 	@$(call CP, module_build_info $(EXPORT_DIR)/module_build_info)
 	@echo "EXPORTED = 1" >> $(EXPORT_DIR)/module_build_info
 
-export: all $(EXPORT_DIR) $(EXPORT_LIB_DIR)/lib$(LIBRARY).a $(foreach x, $(EXPORT_SOURCE_DIRS), $x.export) $(EXPORT_DIR)/module_build_info
+LIBRARIES ?= $(LIBRARY)
+
+ifeq ($(LIBRARY),NONE)
+else
+export: all
+endif
+
+
+do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib).a) $(foreach x, $(EXPORT_SOURCE_DIRS), $x.export) $(EXPORT_DIR)/module_build_info
 	@echo Export complete
+
+.PHONY: export
+
+export:
+	@$(call RMRF, export)
+	@make -f $(XCOMMON_MAKEFILE) do_export
 
 clean: clean_common

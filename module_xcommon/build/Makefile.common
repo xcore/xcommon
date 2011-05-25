@@ -36,6 +36,8 @@ XCC_XC_FLAGS ?= $(XCC_FLAGS)
 XCC_ASM_FLAGS ?= $(XCC_FLAGS)
 XCC_MAP_FLAGS ?= $(XCC_FLAGS)
 
+export VERBOSE
+
 ifneq ($(DISABLE_WALL),1) 
 XCC_FLAGS += -Wall
 endif
@@ -206,13 +208,21 @@ $(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notd
 
 PREBUILD_MAKEFILES := 
 
+GET_LIBRARY = $(if $(filter $(MODULE_LIBRARIES),$1),$(firstword $(filter $(MODULE_LIBRARIES), $1)),$(firstword $1))
+
 define INCLUDE_MODULE
+
 LIBRARY := 
+LIBRARIES := 
 SOURCE_DIRS :=
 INCLUDE_DIRS :=
 LIB_DIRS :=
 CURRENT_MODULE := $$(strip $$(call GET_MODULE_NAME,$1))
 CURRENT_MODULE_DIR := $$(if $$(call SEARCH_FOR_MODULE,$$(CURRENT_MODULE)), $$(call SEARCH_FOR_MODULE,$$(CURRENT_MODULE)), not_found)
+ifeq ($$(words $$(CURRENT_MODULE_DIR)),1)
+else
+$$(error Multiple copies of $$(CURRENT_MODULE) found: $$(CURRENT_MODULE_DIR))
+endif
 MODULE_XCC_FLAGS :=
 MODULE_XCC_C_FLAGS :=
 MODULE_XCC_XC_FLAGS :=
@@ -225,6 +235,8 @@ REQUIRED_VERSION := $$(call GET_MODULE_VERSION,$1)
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(VERSION)),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but there is no VERSION file for that module)))
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(filter $$(REQUIRED_VERSION),$$(VERSION))),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but actual version is $$(VERSION))),)
 -include $$(CURRENT_MODULE_DIR)/module_build_info
+LIBRARY := $$(if $$(LIBRARIES),$$(call GET_LIBRARY,$$(LIBRARIES)),$$(LIBRARY))
+EXCLUDE_LIBS := $$(EXCLUDE_LIBS) $$(filter-out $$(LIBRARY),$$(LIBRARIES))
 LIBRARY := $$(if $$(filter 1,$$(EXPORTED)),,$$(LIBRARY))
 SOURCE_DIRS := $$(if $$(SOURCE_DIRS), $$(SOURCE_DIRS), *)
 INCLUDE_DIRS := $$(if $$(INCLUDE_DIRS), $$(INCLUDE_DIRS), *)
@@ -232,15 +244,13 @@ LIB_DIRS := $$(if $$(LIB_DIRS), $$(LIB_DIRS), *)
 MODULE_SOURCE_DIRS := $$(foreach x,$$(SOURCE_DIRS), $$(call EXPAND_DIR,$$(CURRENT_MODULE_DIR)/$$x))
 MODULE_EXPORT_DIRS := $$(foreach x, $$(EXPORT_SOURCE_DIRS), $$(CURRENT_MODULE_DIR)/$$x)
 MODULE_SOURCE_DIRS := $$(if $$(LIBRARY), $$(filter $$(MODULE_EXPORT_DIRS), $$(MODULE_SOURCE_DIRS)), $$(MODULE_SOURCE_DIRS))
-
-
+MODULE_INCLUDE_DIRS := $$(foreach x,$$(INCLUDE_DIRS), $$(call EXPAND_DIR,$$(CURRENT_MODULE_DIR)/$$x))
+MODULE_INCLUDE_DIRS := $$(if $$(LIBRARY), $$(filter $$(MODULE_EXPORT_DIRS), $$(MODULE_INCLUDE_DIRS)), $$(MODULE_INCLUDE_DIRS))
 
 PREBUILD_MAKEFILES := $$(if $$(LIBRARY), $$(if $$(wildcard $$(CURRENT_MODULE_DIR)/Makefile), $$(CURRENT_MODULE_DIR)/Makefile,),) $$(PREBUILD_MAKEFILES)
 
 FULL_SOURCE_DIRS := $(FULL_SOURCE_DIRS) $$(MODULE_SOURCE_DIRS)
-FULL_INCLUDE_DIRS := $(FULL_INCLUDE_DIRS) $$(foreach x,$$(INCLUDE_DIRS), $$(call EXPAND_DIR,$$(CURRENT_MODULE_DIR)/$$x))
-
-FULL_INCLUDE_DIRS := $$(if $$(LIBRARY), $$(filter $$(MODULE_EXPORT_DIRS), $$(FULL_INCLUDE_DIRS)), $$(FULL_INCLUDE_DIRS))
+FULL_INCLUDE_DIRS := $(FULL_INCLUDE_DIRS) $$(MODULE_INCLUDE_DIRS)
 
 FULL_LIB_DIRS := $(FULL_LIB_DIRS) $$(foreach x,$$(LIB_DIRS), $$(call EXPAND_DIR, $$(CURRENT_MODULE_DIR)/$$x))
 
@@ -258,6 +268,8 @@ $$(if $$(MODULE_XCC_ASM_FLAGS), $$(call SET_XCC_ASM_FLAGS, $$(SOURCE_DIRS), $$(M
 endef
 
 $(foreach x,$(USED_MODULES),$(eval $(call INCLUDE_MODULE,$x)))
+
+
 
 TO_BUILD_DIR = $(patsubst td/%,$(TARGET_DIR)/%,$(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1))))
 
@@ -331,8 +343,9 @@ VPATH += $(SEARCH_DIR)
 
 
 
-
-LIB_FILES = $(foreach x, $(FULL_LIB_DIRS), $(wildcard $x/xs1b/lib*.a))
+LIB_FILES := $(foreach x, $(FULL_LIB_DIRS), $(wildcard $x/xs1b/lib*.a))
+EXCLUDE_LIB_PATTERN = $(foreach x, $(EXCLUDE_LIBS), %lib$x.a)
+LIB_FILES := $(filter-out $(EXCLUDE_LIB_PATTERN), $(LIB_FILES))
 LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
 #remove duplicates
 LIB_DIRS := $(sort $(LIB_DIRS))
