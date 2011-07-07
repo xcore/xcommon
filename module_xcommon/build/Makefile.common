@@ -13,7 +13,7 @@ FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(CONFIG)
 
-XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
+XCOMMON_MAKEFILE = $(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
 
 MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
