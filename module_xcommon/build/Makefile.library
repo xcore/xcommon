@@ -129,8 +129,8 @@ endif
 
 ARCH ?= xs1b
 
-BUILD_NAME ?= $(ARCH)
-WORKING_DIR ?= .build_$(LIBRARY)
+BUILD_NAME := $(ARCH)
+WORKING_DIR := .build_$(LIBRARY)
 TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
