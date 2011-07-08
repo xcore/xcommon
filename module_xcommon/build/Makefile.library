@@ -88,9 +88,9 @@ endif
 
 include module_build_info
 
-INCLUDE_DIRS ?= *
-SOURCE_DIRS ?= *
-LIB_DIRS ?= *
+INCLUDE_DIRS := *
+SOURCE_DIRS := *
+LIB_DIRS := *
 
 
 GET_ALL_SUBDIRS = $1 $(foreach x,$(filter-out %archive, $(wildcard $1/*)),$(if $(call IS_DIR, $x), $(call GET_ALL_SUBDIRS, $x),))
@@ -143,7 +143,6 @@ LIB_DIR=$(BASE_DIR)/lib/$(BUILD_NAME)
 FULL_INCLUDE_DIRS := $(foreach x, $(INCLUDE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_SOURCE_DIRS := $(foreach x, $(SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_LIB_DIRS := $(foreach x, $(LIB_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
-
 
 FULL_INCLUDE_DIRS := $(filter-out ./export%, $(FULL_INCLUDE_DIRS))
 FULL_SOURCE_DIRS := $(filter-out ./export%, $(FULL_INCLUDE_DIRS))
