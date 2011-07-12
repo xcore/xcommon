@@ -55,10 +55,9 @@ WINFLAG=0
 endif
 endif
 
+XCOMMON_MAKEFILE = $(filter %/Makefile.common1,$(MAKEFILE_LIST))
 
-XCOMMON_MAKEFILE = $(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
-
-MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
+MODULE_XCOMMON_DIR = $(abspath $(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..))
 
 SP = 
 
