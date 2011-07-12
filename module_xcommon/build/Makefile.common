@@ -17,6 +17,9 @@ XCOMMON_MAKEFILE = $(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIS
 
 MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
+.PHONY: $(BIN_DIR)/$(APP_NAME).xe
+.PHONY: clean_common
+
 $(BIN_DIR)/$(APP_NAME).xe:
 	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory $(BIN_DIR)/$(APP_NAME).xe
 
