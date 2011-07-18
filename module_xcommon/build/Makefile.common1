@@ -57,7 +57,7 @@ endif
 
 XCOMMON_MAKEFILE = $(filter %/Makefile.common1,$(MAKEFILE_LIST))
 
-MODULE_XCOMMON_DIR = $(abspath $(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..)
+MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..)
 
 SP = 
 
