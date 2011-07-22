@@ -5,9 +5,9 @@
 #
 # BASE_DIR = home directory of project (i.e. where the bin/ and src/ directories are)
 #
-# TARGET = target board/device 
+# TARGET = target board/device
 #
-# SOURCE_DIRS = directories under the src/ directory containing source to compiler 
+# SOURCE_DIRS = directories under the src/ directory containing source to compiler
 # INCLUDE_DIRS = directories under the src/ direcotry containing header files
 #
 # LIB_DIRS = directories under the src directory containing libraries
@@ -22,8 +22,8 @@
 #                           overide XCC_FLAGS)
 #
 # BUILD_NAME = The name of the build. This affects where binaries and libraries
-#               are put under bin/ and lib/ and the 
-#               directory under current directory that the intermediate build 
+#               are put under bin/ and lib/ and the
+#               directory under current directory that the intermediate build
 #               files are kept in. . Defaults to $(TARGET).
 #
 ##########################################
@@ -38,7 +38,7 @@ XCC_MAP_FLAGS ?= $(XCC_FLAGS)
 
 export VERBOSE
 
-ifneq ($(DISABLE_WALL),1) 
+ifneq ($(DISABLE_WALL),1)
 XCC_FLAGS += -Wall
 endif
 
@@ -59,7 +59,7 @@ XCOMMON_MAKEFILE = $(filter %/Makefile.common1,$(MAKEFILE_LIST))
 
 MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..)
 
-SP = 
+SP =
 
 ifeq ($(WINFLAG),1)
 CP=copy $(subst /,\,$(1))
@@ -83,7 +83,7 @@ NULL=/dev/null
 CAT=cat
 OS=UNIX
 TO_OS=$(1)
-CHANGEDEP = sed  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" -e "s/ \.\.\// .\//g" -e "s/$(subst /,\/,$(abspath ..)/)/.\/..\//g" $(TARGET_DIR)/$(notdir $1) > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = sed  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\//\.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  $(TARGET_DIR)/$(notdir $1) > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
 
@@ -172,18 +172,18 @@ $(call REMOVE_MODULE_VERSION,$1)))
 
 
 
-SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1) 
+SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1)
 
 
 
 # Work out the directories and file lists
 APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
 
-ifeq ($(strip $(TARGET)),) 
+ifeq ($(strip $(TARGET)),)
 $(error No TARGET specified in application Makefile)
 endif
 
-ifeq ($(strip $(APP_NAME)),) 
+ifeq ($(strip $(APP_NAME)),)
 APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
 
@@ -209,14 +209,14 @@ FULL_LIB_DIRS := $(foreach x, $(LIB_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 
 $(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notdir $x)), $(eval XCC_FLAGS_$(patsubst ./%,%,$x) := $(XCC_FLAGS_$(notdir $x))),))
 
-PREBUILD_MAKEFILES := 
+PREBUILD_MAKEFILES :=
 
 GET_LIBRARY = $(if $(filter $(MODULE_LIBRARIES),$1),$(firstword $(filter $(MODULE_LIBRARIES), $1)),$(firstword $1))
 
 define INCLUDE_MODULE
 
-LIBRARY := 
-LIBRARIES := 
+LIBRARY :=
+LIBRARIES :=
 SOURCE_DIRS :=
 INCLUDE_DIRS :=
 LIB_DIRS :=
@@ -274,7 +274,11 @@ $(foreach x,$(USED_MODULES),$(eval $(call INCLUDE_MODULE,$x)))
 
 
 
-TO_BUILD_DIR = $(patsubst td/%,$(TARGET_DIR)/%,$(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1))))
+TBD0 = $(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1)))
+
+TBD1 = $(if $(filter td%,$(call TBD0,$1)),$(call TBD0,$1),td/$1)
+
+TO_BUILD_DIR = $(patsubst td/%,$(TARGET_DIR)/%,$(call TBD1,$1))
 
 EXCLUDE_PATTERN = $(foreach x, $(EXCLUDE_FILES), %$x)
 
@@ -304,7 +308,7 @@ ASM_OBJ_FILES = $(patsubst %.S, %.o, $(patsubst %.s, %.o, $(ASM_SOURCE_FILES)))
 ASM_DEP_FILES = $(foreach x,$(ASM_SOURCE_FILES:.S=.d),$(call TO_BUILD_DIR, $x))
 
 
-XTA_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(wildcard $x/*.xta)) 
+XTA_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(wildcard $x/*.xta))
 XTA_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(XTA_SOURCE_FILES))
 
 OBJ_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(wildcard $x/*.o))
@@ -328,7 +332,7 @@ $(error Project paths or files contain spaces - this is not currently supported)
 endif
 
 
-OBJ_FILES := $(C_OBJ_FILES) $(XC_OBJ_FILES) $(ASM_OBJ_FILES) $(CPP_OBJ_FILES) 
+OBJ_FILES := $(C_OBJ_FILES) $(XC_OBJ_FILES) $(ASM_OBJ_FILES) $(CPP_OBJ_FILES)
 OBJ_FILES := $(patsubst $(REL_SEARCH_DIR)/%,td/%,$(OBJ_FILES))
 OBJ_FILES := $(patsubst ./%,td/%,$(OBJ_FILES))
 OBJ_FILES := $(patsubst td/%,$(TARGET_DIR)/%,$(OBJ_FILES))
@@ -379,7 +383,7 @@ $(BIN_DIR)/:
 $(LIB_DIR)/:
 	@-$(call MKDIR,$(LIB_DIR)) > $(NULL)
 
-$(BASE_DIR)/bin/: 
+$(BASE_DIR)/bin/:
 	@-$(call MKDIR,$(BASE_DIR)/bin) > $(NULL)
 
 # Make rules for source
@@ -400,7 +404,7 @@ endif
 
 
 define LANG
-$(strip $(if $(filter %.c, $1), C, 
+$(strip $(if $(filter %.c, $1), C,
   $(if $(filter %.xc, $1), XC,
      $(if $(filter %.cpp, $1), CPP,
 	$(if $(filter %.S, $1), ASM,
@@ -412,7 +416,7 @@ $(if $(XCC_$(call LANG,$1)_FLAGS), $(XCC_$(call LANG,$1)_FLAGS), $(XCC_FLAGS))
 endef
 
 define make_flags
-$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS)) 
+$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS))
 endef
 
 ifeq ($(WINFLAG),1)
@@ -459,12 +463,12 @@ NO_PREBUILD := 1
 endif
 
 
-ifeq ($(NO_PREBUILD),1) 
+ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(BIN_DIR)/ 
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(BIN_DIR)/
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(addprefix ../, $(OBJ_FILES)) $(addprefix ../, $(XN_SOURCE_FILES)) $(addprefix ../, $(XTA_SOURCE_FILES)) -o ../$@
 else
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(BIN_DIR)/ 
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(BIN_DIR)/
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(addprefix ../, $(OBJ_FILES)) $(addprefix ../, $(XN_SOURCE_FILES)) $(addprefix ../, $(XTA_SOURCE_FILES))  -o ../$@
 endif
@@ -543,4 +547,4 @@ partial_clean:
 clean_fake_includes : | $(FAKE_INC_DIR)/
 	@-$(call RMRF,$(FAKE_INC_DIR))
 
-all: clean_fake_includes 
+all: clean_fake_includes
