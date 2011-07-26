@@ -7,7 +7,7 @@ MODULE_XCOMMON_DIR = $(patsubst %/Makefile.libraries,%,$(XCOMMON_MAKEFILE))/..
 include module_build_info
 
 %.all: 
-	@echo Bulding $*
+	@echo Building $*
 	@make LIBRARY=$* --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library all
 
 %.clean: 
