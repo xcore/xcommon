@@ -13,7 +13,11 @@ FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(CONFIG)
 
-XCOMMON_MAKEFILE = $(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIST))
+MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
+MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
+
+XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %module_xcommon/build/Makefile.common,$(MAKEFILE_LIST2)))
+
 
 MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
