@@ -55,7 +55,10 @@ WINFLAG=0
 endif
 endif
 
-XCOMMON_MAKEFILE = $(filter %/Makefile.common1,$(MAKEFILE_LIST))
+MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
+MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
+
+XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %Makefile.common1,$(MAKEFILE_LIST2)))
 
 MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..)
 
@@ -66,13 +69,13 @@ CP=copy $(subst /,\,$(1))
 MV=move /Y $(subst /,\,$(1))
 RM=cmd /c if exist "$(subst /,\,$(1))" del /Q /F "$(subst /,\,$(1))"
 RMRF=cmd /c if exist "$(subst /,\,$(1))" RMDIR /S /Q "$(subst /,\,$(1))"
-MKDIR=$(MODULE_XCOMMON_DIR)/build/mkdir.bat $(subst /,\,$(1)) 2> nul
+MKDIR="$(subst /,\,$(subst \ , ,$(MODULE_XCOMMON_DIR)))/build/mkdir.bat" $(subst /,\,$(1)) 2> nul
 NULL=nul
 CAT=type
 OS=WINDOWS
 SHELL=C:\Windows\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
-CHANGEDEP = $(call TO_OS, $(MODULE_XCOMMON_DIR)/build/changedep.exe) "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" ".." "./" "$(abspath ../..)" "./../.."  > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 CP=cp $(1)
 MV=mv $(1)
