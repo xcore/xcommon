@@ -362,24 +362,6 @@ XN_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(XN_SOURCE_FILES))
 
 SOURCE_FILES = $(C_SOURCE_FILES) $(CPP_SOURCE_FILES) $(XC_SOURCE_FILES) $(ASM_SOURCE_FILES)
 
-SPACED_FILES = $(foreach f, $(SOURCE_FILES),$(if $(call WILDCARD,$(f)),,$(f)))
-
-ifeq ($(strip $(SOURCE_FILES)),)
-$(error Cannot find any source files)
-endif
-
-ifeq ($(strip $(SPACED_FILES)),)
-else
-$(error Project paths or files contain spaces - this is not currently supported)
-endif
-
-
-# OBJ_FILES := $(C_OBJ_FILES) $(XC_OBJ_FILES) $(ASM_OBJ_FILES) $(CPP_OBJ_FILES)
-# OBJ_FILES := $(patsubst $(REL_SEARCH_DIR)/%,td/%,$(OBJ_FILES))
-# OBJ_FILES := $(patsubst ./%,td/%,$(OBJ_FILES))
-# OBJ_FILES := $(patsubst td/%,$(TARGET_DIR)/%,$(OBJ_FILES))
-# OBJ_FILES := $(OBJ_FILES) $(OBJ_SOURCE_FILES)
-
 OBJ_FILES := $(foreach x,$(SOURCE_FILES),$(call TO_OBJ,$(call TO_BUILD_DIR,$x)))
 
 DEP_FILES_0 = $(CPP_DEP_FILES) $(C_DEP_FILES) $(XC_DEP_FILES) $(ASM_DEP_FILES)
