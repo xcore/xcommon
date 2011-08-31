@@ -1,5 +1,8 @@
 export
 
+# Overide windows shell in case cygwin is present
+SHELL := $(if $(findstring Windows, $(OS))$(findstring WINDOWS,$(OS)),$(windir)\system32\cmd.exe,$(SHELL))
+
 BASE_DIR ?= .
 ifeq ($(strip $(APP_NAME)),) 
 APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))

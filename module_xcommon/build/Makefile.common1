@@ -99,7 +99,7 @@ MKDIR="$(subst /,\,$(subst \ , ,$(MODULE_XCOMMON_DIR)))/build/mkdir.bat" $(subst
 NULL=nul
 CAT=type
 OS=WINDOWS
-SHELL=C:\Windows\system32\cmd.exe
+SHELL=$(windir)\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
 CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" "././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
 else
