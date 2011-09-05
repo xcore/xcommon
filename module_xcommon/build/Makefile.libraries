@@ -1,5 +1,8 @@
 export LIBRARIES
 
+# Overide windows shell in case cygwin is present
+SHELL := $(if $(findstring Windows, $(OS))$(findstring WINDOWS,$(OS)),$(windir)\system32\cmd.exe,$(SHELL))
+
 XCOMMON_MAKEFILE = $(filter %xcommon/module_xcommon/build/Makefile.libraries,$(MAKEFILE_LIST))
 
 MODULE_XCOMMON_DIR = $(patsubst %/Makefile.libraries,%,$(XCOMMON_MAKEFILE))/..
