@@ -11,11 +11,11 @@ include module_build_info
 
 %.all: 
 	@echo Building $*
-	@make LIBRARY=$* --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library all
+	@xmake LIBRARY=$* --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library all
 
 %.clean: 
 	@echo Cleaning $*
-	@make LIBRARY=$* --no-print-directory  -f $(MODULE_XCOMMON_DIR)/build/Makefile.library clean
+	@xmake LIBRARY=$* --no-print-directory  -f $(MODULE_XCOMMON_DIR)/build/Makefile.library clean
 
 %.export: 
 	@echo Exporting $*
@@ -27,5 +27,5 @@ clean: $(foreach lib, $(LIBRARIES), $(lib).clean)
 	@echo Done
 
 export: $(foreach lib, $(LIBRARIES), $(lib).all)
-	@make LIBRARY=$(firstword $(LIBRARIES)) --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library export
+	@xmake LIBRARY=$(firstword $(LIBRARIES)) --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library export
 	@echo Done
