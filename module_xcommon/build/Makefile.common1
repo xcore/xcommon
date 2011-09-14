@@ -514,8 +514,9 @@ eclipse_config:
 else
 eclipse_config:
 	@echo "Updating eclipse config"
-	@$(AUTO_PROJ) ../.project $(ECLIPSE_PROJECTS) > .tmpproject
-	@cmd /c more .tmpproject > .project
+	@$(AUTO_PROJ) ..\.project $(ECLIPSE_PROJECTS) > .tmpproject
+	@cmd /c more .tmpproject > ..\.project
+	@$(call RM,.tmpproject)
 endif
 
 ifeq ($(AUTO_ECLIPSE),1)
