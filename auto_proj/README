@@ -1,0 +1,4 @@
+To build this executable you need to add tinyxml source files to the
+this directory:
+
+   http://www.grinninglizard.com/tinyxml/

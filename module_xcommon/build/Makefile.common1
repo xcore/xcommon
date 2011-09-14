@@ -30,6 +30,7 @@
 
 BASE_DIR ?= .
 VERBOSE ?= 0
+AUTO_ECLIPSE ?= 1
 XCC_C_FLAGS ?= $(XCC_FLAGS)
 XCC_CPP_FLAGS ?= $(XCC_FLAGS)
 XCC_XC_FLAGS ?= $(XCC_FLAGS)
@@ -101,6 +102,7 @@ CAT=type
 OS=WINDOWS
 SHELL=$(windir)\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
+AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj.exe)"
 CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
 else
 PATHSEP=:
@@ -113,6 +115,7 @@ NULL=/dev/null
 CAT=cat
 OS=UNIX
 TO_OS=$(1)
+AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj)"
 CHANGEDEP = sed -e 's/\(\/[^ .\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call UNMANGLE_NO_ESCAPE,$(notdir $1))" > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
 endif
 
@@ -254,6 +257,9 @@ PREBUILD_MAKEFILES :=
 
 GET_LIBRARY = $(if $(filter $(MODULE_LIBRARIES),$1),$(firstword $(filter $(MODULE_LIBRARIES), $1)),$(firstword $1))
 
+CURRENT_REPO = $(notdir $(abspath ..))
+ECLIPSE_PROJECTS :=
+
 define INCLUDE_MODULE
 
 LIBRARY :=
@@ -275,6 +281,11 @@ EXPORT_SOURCE_DIRS :=
 $$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$$(CURRENT_MODULE)'))
 VERSION :=
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/VERSION
+REPO := $$(notdir $$(abspath $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/..))
+REPO := $$(if $$(filter $$(REPO),$$(ECLIPSE_PROJECTS)),,$$(REPO))
+REPO := $$(if $$(filter $$(REPO),$$(CURRENT_REPO)),,$$(REPO))
+ECLIPSE_PROJECTS += $$(REPO)
+
 REQUIRED_VERSION := $$(call GET_MODULE_VERSION,$1)
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(VERSION)),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but there is no VERSION file for that module)))
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(filter $$(REQUIRED_VERSION),$$(VERSION))),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but actual version is $$(VERSION))),)
@@ -311,7 +322,11 @@ $$(if $$(MODULE_XCC_XC_FLAGS), $$(call SET_XCC_XC_FLAGS, $$(SOURCE_DIRS), $$(MOD
 $$(if $$(MODULE_XCC_ASM_FLAGS), $$(call SET_XCC_ASM_FLAGS, $$(SOURCE_DIRS), $$(MODULE_XCC_ASM_FLAGS)),)
 endef
 
+
+
 $(foreach x,$(USED_MODULES),$(eval $(call INCLUDE_MODULE,$x)))
+
+
 
 TBD0 = $(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1)))
 
@@ -478,12 +493,44 @@ NO_PREBUILD := 1
 endif
 
 
+ifeq ($(WINFLAG),0)
+CURRENT_PROJECTS = $(shell sed -n '/<projects>/,/<\/projects/p' ../.project)
+CURRENT_PROJECTS := $(subst <projects>,,$(CURRENT_PROJECTS))
+CURRENT_PROJECTS := $(subst </projects>,,$(CURRENT_PROJECTS))
+CURRENT_PROJECTS := $(subst </project>,,$(CURRENT_PROJECTS))
+CURRENT_PROJECTS := $(patsubst <project>%,%,$(CURRENT_PROJECTS))
+
+ECLIPSE_PROJECTS := $(filter-out $(CURRENT_PROJECTS),$(ECLIPSE_PROJECTS))
+ECLIPSE_PROJECTS := $(CURRENT_PROJECTS) $(ECLIPSE_PROJECTS)
+ECLIPSE_PROJECTS := $(foreach x,$(ECLIPSE_PROJECTS),<project>$x<\/project>)
+
+
+eclipse_config:
+	@echo "Updating eclipse config"
+	@sed -e 's/<project>.*<\/project>//g' < ../.project > .tmpproject
+	@sed -i -e 's/<projects>/<projects>$(ECLIPSE_PROJECTS)/g' .tmpproject
+	@$(call CP,.tmpproject ../.project)
+	@$(call RM,.tmpproject)
+else
+eclipse_config:
+	@echo "Updating eclipse config"
+	@$(AUTO_PROJ) ../.project $(ECLIPSE_PROJECTS) > .tmpproject
+	@cmd /c more .tmpproject > .project
+endif
+
+ifeq ($(AUTO_ECLIPSE),1)
+ECLIPSE_CONFIG=$(if $(wildcard ../.project),eclipse_config,)
+else
+ECLIPSE_CONFIG=
+endif
+
+
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(BIN_DIR)/
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x)) $(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x)) -o $(call DOTDOT,$@)
 else
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(BIN_DIR)/
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x)) $(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x)) -o $(call DOTDOT,$@)
 endif
