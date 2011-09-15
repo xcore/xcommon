@@ -520,7 +520,7 @@ eclipse_config:
 endif
 
 ifeq ($(AUTO_ECLIPSE),1)
-ECLIPSE_CONFIG=$(if $(wildcard ../.project),$(if $(ECLIPSE_PROJECTS),eclipse_config,),)
+ECLIPSE_CONFIG=$(if $(wildcard ../.project),$(if $(strip $(ECLIPSE_PROJECTS)),eclipse_config,),)
 else
 ECLIPSE_CONFIG=
 endif
