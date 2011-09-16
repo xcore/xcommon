@@ -93,6 +93,7 @@ SP = $(SP0) $(SP0)
 ifeq ($(WINFLAG),1)
 PATHSEP=;
 CP=copy $(subst /,\,$(1))
+XCP=xcopy $(subst /,\,$(1))
 MV=move /Y $(subst /,\,$(1))
 RM=cmd /c if exist "$(subst /,\,$(1))" del /Q /F "$(subst /,\,$(1))"
 RMRF=cmd /c if exist "$(subst /,\,$(1))" RMDIR /S /Q "$(subst /,\,$(1))"
@@ -107,6 +108,7 @@ CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.ex
 else
 PATHSEP=:
 CP=cp $(1)
+XCP=cp -r $(1)
 MV=mv $(1)
 RM=rm -f $(1)
 RMRF=rm -rf $(1)
@@ -223,7 +225,7 @@ SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1
 # Work out the directories and file lists
 APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
 
-ifeq ($(strip $(TARGET)),)
+ifeq ($(strip $(TARGET)$(BUILDING_LIBRARY)),)
 $(error No TARGET specified in application Makefile)
 endif
 
@@ -231,7 +233,14 @@ ifeq ($(strip $(APP_NAME)),)
 APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
 
+
+ifeq ($(BUILDING_LIBRARY),)
 CONFIG ?= Release
+else
+CONFIG := $(LIBRARY)
+endif
+
+ARCH ?= xs1b
 
 BUILD_NAME ?= $(CONFIG)
 WORKING_DIR ?= .build_$(BUILD_NAME)
@@ -239,7 +248,7 @@ TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(CONFIG)
-LIB_DIR=$(BASE_DIR)/lib/$(CONFIG)/$(TARGET)
+LIB_DIR=$(BASE_DIR)/lib/$(ARCH)
 
 INCLUDE_DIRS ?= *
 SOURCE_DIRS ?= *
@@ -249,6 +258,12 @@ LIB_DIRS ?= *
 FULL_INCLUDE_DIRS := $(foreach x, $(INCLUDE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_SOURCE_DIRS := $(foreach x, $(SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_LIB_DIRS := $(foreach x, $(LIB_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
+
+EXCLUDE_SOURCE_DIRS := $(foreach x, $(EXPORT_SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
+
+SAME_DIR = $(if $(filter $(abspath $(call UNMANGLE,$1)),$(abspath $(call UNMANGLE,$2))),1,)
+
+FULL_SOURCE_DIRS := $(filter-out $(EXCLUDE_SOURCE_DIRS),$(FULL_SOURCE_DIRS))
 
 
 $(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notdir $x)), $(eval XCC_FLAGS_$(patsubst ./%,%,$x) := $(XCC_FLAGS_$(notdir $x))),))
@@ -436,12 +451,12 @@ XCC = xcc
 XAR = xmosar
 XOBJDUMP = xobjdump
 
-ifeq ($(LIBRARY),1)
-TARGET_FLAGS = -march=$(TARGET)
-else
+ifeq ($(BUILDING_LIBRARY),)
 ifeq (,$(XN_SOURCE_FILES))
 TARGET_FLAGS = -target=$(TARGET)
 endif
+else
+TARGET_FLAGS = -march=$(ARCH)
 endif
 
 
@@ -526,6 +541,8 @@ ECLIPSE_CONFIG=
 endif
 
 
+
+
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
@@ -535,6 +552,16 @@ $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FI
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x)) $(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x)) -o $(call DOTDOT,$@)
 endif
+
+ifeq ($(VERBOSE),1)
+$(LIB_DIR)/%.a :  $(OBJ_FILES) $(XN_SOURCE_FILES) |$(LIB_DIR)/
+	cd $(TARGET_DIR) && $(XAR) cru ../$@ $(addprefix ../, $(OBJ_FILES)) 
+else
+$(LIB_DIR)/%.a :  $(OBJ_FILES) $(XN_SOURCE_FILES)  |$(LIB_DIR)/
+	@echo Creating $(notdir $@)
+	@cd $(TARGET_DIR) && $(XAR) cru ../$@ $(addprefix ../, $(OBJ_FILES)) 
+endif
+
 
 else
 NO_PREBUILD := 1
@@ -561,10 +588,12 @@ endef
 $(foreach x,$(SOURCE_FILES),$(eval $(call DEP_RULE,$x)))
 
 
-
+lib: $(LIB_DIR)/lib$(LIBRARY).a
 
 ifneq ($(MAKECMDGOALS),clean_common)
+ifneq ($(MAKECMDGOALS),clean_lib)
 -include $(DEP_FILES_0)
+endif
 endif
 
 
@@ -587,6 +616,11 @@ clean_common: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild.clean)
 	-$(call RMRF,$(BIN_DIR))
 	-$(call RMRF,$(TARGET_DIR))
 
+
+clean_lib:
+	-$(call RMRF,$(LIB_DIR))
+	-$(call RMRF,$(TARGET_DIR))
+
 partial_clean:
 	-$(call RMRF,$(TARGET_DIR))
 
@@ -595,3 +629,44 @@ clean_fake_includes : | $(FAKE_INC_DIR)/
 
 all: clean_fake_includes
 
+
+
+MODULE_NAME ?= $(subst .,_,$(notdir $(abspath .)))
+EXPORT_DIR = $(BASE_DIR)/export/$(MODULE_NAME)
+EXPORT_LIB_DIR = $(EXPORT_DIR)/lib/$(BUILD_NAME)
+
+$(EXPORT_DIR):
+	@echo Creating export directory
+	@$(call MKDIR,$(EXPORT_DIR))	
+
+$(EXPORT_LIB_DIR)/lib%.a:
+	@$(call MKDIR,$(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME))	
+	@echo Copying library
+	@$(call CP,$(LIB_DIR)/lib$*.a $(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME)/lib$*.a)
+
+%.export:
+	@echo Exporting directory: $*
+	@$(call XCP, $* $(EXPORT_DIR)/$*)
+
+.PHONY: $(EXPORT_DIR)/module_build_info
+
+$(EXPORT_DIR)/module_build_info:
+	@echo Copying module_build_info
+	@$(call CP, module_build_info $(EXPORT_DIR)/module_build_info)
+	@echo "EXPORTED = 1" >> $(EXPORT_DIR)/module_build_info
+
+ifeq ($(LIBRARY),NONE)
+else
+export: lib
+endif
+
+.PHONY: do_export
+
+do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib).a) $(foreach x, $(EXPORT_SOURCE_DIRS), $x.export) $(EXPORT_DIR)/module_build_info
+	@echo Export complete
+
+.PHONY: export
+
+export:
+	@$(call RMRF, export)
+	@xmake -f $(XCOMMON_MAKEFILE) do_export
