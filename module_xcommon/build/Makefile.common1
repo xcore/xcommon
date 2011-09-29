@@ -192,7 +192,9 @@ else
 MY_SRCDIR = $(BASE_DIR)
 endif
 
-FIND_MODULE = $(BASE_DIR)/../$(filter $1%,$(USED_MODULES))
+UM := $(USED_MODULES)
+
+FIND_MODULE = $(BASE_DIR)/../$(filter $1%,$(UM))
 
 IS_MODULE_DIR = $(filter %::,$(subst ::,:: ,$1))
 GET_MODULE_DIR = $(call FIND_MODULE,$(word 1,$(subst ::, ,$1)))/$(word 2,$(subst ::, ,$1))
@@ -276,7 +278,6 @@ CURRENT_REPO = $(notdir $(abspath ..))
 ECLIPSE_PROJECTS :=
 
 define INCLUDE_MODULE
-
 LIBRARY :=
 LIBRARIES :=
 SOURCE_DIRS :=
@@ -293,6 +294,7 @@ MODULE_XCC_C_FLAGS :=
 MODULE_XCC_XC_FLAGS :=
 MODULE_XCC_ASM_FLAGS :=
 EXPORT_SOURCE_DIRS :=
+DEPENDENT_MODULES :=
 $$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$$(CURRENT_MODULE)'))
 VERSION :=
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/VERSION
@@ -335,12 +337,26 @@ $$(if $$(MODULE_XCC_C_FLAGS), $$(call SET_XCC_C_FLAGS, $$(SOURCE_DIRS), $$(MODUL
 $$(if $$(MODULE_XCC_CPP_FLAGS), $$(call SET_XCC_CPP_FLAGS, $$(SOURCE_DIRS), $$(MODULE_XCC_CPP_FLAGS)),)
 $$(if $$(MODULE_XCC_XC_FLAGS), $$(call SET_XCC_XC_FLAGS, $$(SOURCE_DIRS), $$(MODULE_XCC_XC_FLAGS)),)
 $$(if $$(MODULE_XCC_ASM_FLAGS), $$(call SET_XCC_ASM_FLAGS, $$(SOURCE_DIRS), $$(MODULE_XCC_ASM_FLAGS)),)
+NEW_MODULES := $$(strip $$(filter-out $$(UM),$$(DEPENDENT_MODULES)))
+
+UM += $$(NEW_MODULES)
+TO_PROCESS += $$(NEW_MODULES)
+
 endef
 
+define INCLUDE_MODULES
+PROCESS_NOW := $$(strip $$(TO_PROCESS))
+TO_PROCESS :=
+$$(foreach x,$$(PROCESS_NOW),$$(eval $$(call INCLUDE_MODULE,$$x)))
+endef
 
+define INCLUDE_ALL_MODULES
+$(if $(TO_PROCESS),$(eval $(call INCLUDE_MODULES)))
+$(if $(TO_PROCESS),$(eval $(call INCLUDE_ALL_MODULES)))
+endef
 
-$(foreach x,$(USED_MODULES),$(eval $(call INCLUDE_MODULE,$x)))
-
+TO_PROCESS := $(UM)
+$(eval $(call INCLUDE_ALL_MODULES))
 
 
 TBD0 = $(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1)))
@@ -540,8 +556,9 @@ else
 ECLIPSE_CONFIG=
 endif
 
-
-
+.PHONY: report_modules
+report_modules:
+	@echo Using modules: $(UM)
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
@@ -577,7 +594,7 @@ $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 endif
 
 define DEP_RULE
-$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) | $(TARGET_DIR)/
+$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) | report_modules $(TARGET_DIR)/
 	@echo Creating dependencies for $(call UNMANGLE, $(notdir $1))
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$$(call DOTDOT,$$<)" > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
