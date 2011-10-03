@@ -18,8 +18,14 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  if (!project.FirstChild("projectDescription")) {
+    project.Print(stdout);
+    exit(0);
+  }
+
   TiXmlNode *projects_xml =
     project.FirstChild("projectDescription")->ToElement()->FirstChild("projects");
+
 
   std::set<std::string> current_projects;
 
@@ -35,15 +41,13 @@ int main(int argc, char *argv[]) {
       projects_xml->RemoveChild(project_xml);
       project_xml = next_project_xml;
     }
-  }
 
 
-  for (int i=2;i<argc;i++) {
-    std::string new_proj(argv[i]);
-    current_projects.insert(new_proj);
+    for (int i=2;i<argc;i++) {
+      std::string new_proj(argv[i]);
+      current_projects.insert(new_proj);
 
-  }
-
+    }
 
   for(std::set<std::string>::iterator proj = current_projects.begin();
       proj != current_projects.end();
@@ -54,6 +58,8 @@ int main(int argc, char *argv[]) {
       new_element->LinkEndChild(txt);
       projects_xml->InsertEndChild(*new_element);
     }
+
+  }
 
 
   project.Print(stdout);
