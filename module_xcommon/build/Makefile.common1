@@ -442,6 +442,18 @@ LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
 LIB_DIRS := $(sort $(LIB_DIRS))
 LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L $(call TO_OS, $(call DOTDOT,$x))) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
 
+define NO_SOURCE
+
+
+ERROR: No source files found
+
+
+endef
+
+ifeq ($(strip $(OBJ_FILES)),)
+$(error $(call NO_SOURCE))
+endif
+
 # Make rules for directories
 
 $(FAKE_INC_DIR)/ : | $(TARGET_DIR)/
