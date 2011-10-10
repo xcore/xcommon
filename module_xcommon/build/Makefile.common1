@@ -672,7 +672,7 @@ all: clean_fake_includes
 
 
 ifeq ($(BUILDING_LIBRARY),1)
-MODULE_NAME ?= $(subst .,_,$(notdir $(abspath .)))
+MODULE_NAME ?= $(subst .,_,$(notdir $(call MANGLE,$(abspath .))))
 EXPORT_DIR = $(BASE_DIR)/export/$(MODULE_NAME)
 EXPORT_LIB_DIR = $(EXPORT_DIR)/lib/$(BUILD_NAME)
 
