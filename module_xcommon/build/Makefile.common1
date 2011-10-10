@@ -90,6 +90,8 @@ MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%
 SP0 =
 SP = $(SP0) $(SP0)
 
+FIXDEP = $(patsubst %.xc.d,%.d,$(patsubst %.c.d,%.d,$(patsubst %.cpp.d,%.d,$(patsubst %.s.d,%.d,$1))))
+
 ifeq ($(WINFLAG),1)
 PATHSEP=;
 CP=copy $(subst /,\,$(1))
@@ -104,7 +106,7 @@ OS=WINDOWS
 SHELL=$(windir)\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
 AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj.exe)"
-CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(notdir $1))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 else
 PATHSEP=:
 CP=cp $(1)
@@ -118,7 +120,7 @@ CAT=cat
 OS=UNIX
 TO_OS=$(1)
 AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj)"
-CHANGEDEP = sed -e 's/\(\/[^ .\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call UNMANGLE_NO_ESCAPE,$(notdir $1))" > $1;$(call RM, $(TARGET_DIR)/$(notdir $1))
+CHANGEDEP = sed -e 's/\(\/[^ .\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 endif
 
 
@@ -182,9 +184,9 @@ SET_XCC_ASM_FLAGS = $(foreach z, $(call GET_ASM_FILES, $1), $(if $(XCC_FLAGS_$z)
 
 
 
-TO_OBJ = $(patsubst %.cpp,%.o,$(patsubst %.S,%.o,$(patsubst %.xc,%.o,$(patsubst %.c,%.o,$(patsubst %.s,%.o,$(1))))))
+TO_OBJ = $(patsubst %.cpp,%.cpp.o,$(patsubst %.S,%.s.o,$(patsubst %.xc,%.xc.o,$(patsubst %.c,%.c.o,$(patsubst %.s,%.s.o,$(1))))))
 
-TO_DEP = $(patsubst %.cpp,%.d,$(patsubst %.S,%.d,$(patsubst %.xc,%.d,$(patsubst %.c,%.d,$(patsubst %.s,%.d,$(1))))))
+TO_DEP = $(patsubst %.cpp,%.cpp.d,$(patsubst %.S,%.s.d,$(patsubst %.xc,%.xc.d,$(patsubst %.c,%.c.d,$(patsubst %.s,%.s.d,$(1))))))
 
 ifeq ($(SRC_PREFIX),1)
 MY_SRCDIR = $(BASE_DIR)/src
@@ -384,25 +386,25 @@ EXCLUDE_PATTERN = $(foreach x, $(EXCLUDE_FILES), %$x)
 C_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.c))
 C_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(C_SOURCE_FILES))
 
-C_OBJ_FILES = $(patsubst %.c, %.o, $(C_SOURCE_FILES))
-C_DEP_FILES = $(foreach x,$(C_SOURCE_FILES:.c=.d),$(call TO_BUILD_DIR, $x))
+C_OBJ_FILES = $(patsubst %.c, %.c.o, $(C_SOURCE_FILES))
+C_DEP_FILES = $(foreach x,$(C_SOURCE_FILES:.c=.c.d),$(call TO_BUILD_DIR, $x))
 
 CPP_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.cpp))
 CPP_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(CPP_SOURCE_FILES))
 
-CPP_OBJ_FILES = $(patsubst %.cpp, %.o, $(CPP_SOURCE_FILES))
-CPP_DEP_FILES = $(foreach x,$(CPP_SOURCE_FILES:.cpp=.d),$(call TO_BUILD_DIR, $x))
+CPP_OBJ_FILES = $(patsubst %.cpp, %.cpp.o, $(CPP_SOURCE_FILES))
+CPP_DEP_FILES = $(foreach x,$(CPP_SOURCE_FILES:.cpp=.cpp.d),$(call TO_BUILD_DIR, $x))
 
 XC_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.xc))
 XC_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(XC_SOURCE_FILES))
 
-XC_OBJ_FILES = $(patsubst %.xc, %.o, $(XC_SOURCE_FILES))
-XC_DEP_FILES = $(foreach x,$(XC_SOURCE_FILES:.xc=.d),$(call TO_BUILD_DIR, $x))
+XC_OBJ_FILES = $(patsubst %.xc, %.xc.o, $(XC_SOURCE_FILES))
+XC_DEP_FILES = $(foreach x,$(XC_SOURCE_FILES:.xc=.xc.d),$(call TO_BUILD_DIR, $x))
 
 ASM_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.s)) $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.S))
 ASM_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(ASM_SOURCE_FILES))
-ASM_OBJ_FILES = $(patsubst %.S, %.o, $(patsubst %.s, %.o, $(ASM_SOURCE_FILES)))
-ASM_DEP_FILES = $(foreach x,$(ASM_SOURCE_FILES:.S=.d),$(call TO_BUILD_DIR, $x))
+ASM_OBJ_FILES = $(patsubst %.S, %.s.o, $(patsubst %.s, %.o, $(ASM_SOURCE_FILES)))
+ASM_DEP_FILES = $(foreach x,$(ASM_SOURCE_FILES:.S=.s.d),$(call TO_BUILD_DIR, $x))
 
 
 XTA_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.xta))
