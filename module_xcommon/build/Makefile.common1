@@ -246,12 +246,14 @@ endif
 
 ifeq ($(CONFIG),Default)
 else
-XCC_FLAGS     := XCC_FLAGS_$(CONFIG)
-XCC_XC_FLAGS  := XCC_XC_FLAGS_$(CONFIG)
-XCC_C_FLAGS   := XCC_C_FLAGS_$(CONFIG)
-XCC_CPP_FLAGS := XCC_CPP_FLAGS_$(CONFIG)
-XCC_ASM_FLAGS := XCC_ASM_FLAGS_$(CONFIG)
-XCC_MAP_FLAGS := XCC_MAP_FLAGS_$(CONFIG)
+ifeq ($(BUILDING_LIBARY),)
+XCC_FLAGS     := $(XCC_FLAGS_$(CONFIG))
+XCC_XC_FLAGS  := $(XCC_XC_FLAGS_$(CONFIG))
+XCC_C_FLAGS   := $(XCC_C_FLAGS_$(CONFIG))
+XCC_CPP_FLAGS := $(XCC_CPP_FLAGS_$(CONFIG))
+XCC_ASM_FLAGS := $(XCC_ASM_FLAGS_$(CONFIG))
+XCC_MAP_FLAGS := $(XCC_MAP_FLAGS_$(CONFIG))
+endif
 endif
 
 ARCH ?= xs1b
@@ -444,7 +446,7 @@ OPTIONAL_HEADER_FLAGS=$(foreach x,$(OPTIONAL_HEADERS),$(call OPTIONAL_HEADER_FLA
 VPATH += $(FAKE_INC_DIR)
 VPATH += $(SEARCH_DIR)
 
-
+REMOTE_TRAILING_SLASH = $(subst !!!,,$(subst / !!!,!!!,$1 !!!))
 
 LIB_FILES := $(foreach x, $(FULL_LIB_DIRS), $(call WILDCARD,$x/xs1b/lib*.a))
 EXCLUDE_LIB_PATTERN = $(foreach x, $(EXCLUDE_LIBS), %lib$x.a)
@@ -452,7 +454,7 @@ LIB_FILES := $(filter-out $(EXCLUDE_LIB_PATTERN), $(LIB_FILES))
 LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
 #remove duplicates
 LIB_DIRS := $(sort $(LIB_DIRS))
-LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L $(call TO_OS, $(call DOTDOT,$x))) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
+LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L $(call TO_OS, $(call REMOVE_TRAILING_SLASH,$(call DOTDOT,$x)))) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
 
 define NO_SOURCE
 
@@ -590,11 +592,11 @@ report_modules:
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
-	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x)) $(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x)) -o $(call DOTDOT,$@)
+	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
 else
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
 	@echo Creating $(notdir $@)
-	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x)) $(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x)) -o $(call DOTDOT,$@)
+	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
 endif
 
 ifeq ($(VERBOSE),1)
