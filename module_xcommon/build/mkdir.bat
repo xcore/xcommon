@@ -1,4 +1,10 @@
-@echo off
-IF EXIST %1 GOTO exit
+@ECHO OFF
+:Loop
+IF "%1"=="" GOTO Continue
+IF EXIST %1 GOTO Skip
 MKDIR %1
-:exit
+:Skip
+CD %1
+SHIFT
+GOTO Loop
+:Continue
