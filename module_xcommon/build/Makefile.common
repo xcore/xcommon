@@ -9,18 +9,18 @@ APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
 APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
 ifeq ($(BUILDING_LIBRARY),)
-CONFIG ?= Release
+CONFIG ?= Default
 else
 CONFIG := $(LIBRARY)
 endif
 
-CONFIG ?= Release
+CONFIG ?= Default
 BUILD_NAME ?= $(CONFIG)
-WORKING_DIR ?= .build_$(BUILD_NAME)
+WORKING_DIR ?= $(if $(filter Default,$(CONFIG)),.build,.build_$(BUILD_NAME))
 TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
-BIN_DIR=$(BASE_DIR)/bin/$(CONFIG)
+BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 
 MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
 MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))

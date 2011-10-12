@@ -239,28 +239,29 @@ endif
 
 
 ifeq ($(BUILDING_LIBRARY),)
-CONFIG ?= Release
+CONFIG ?= Default
 else
 CONFIG := $(LIBRARY)
 endif
 
-XCC_FLAGS     := $(if $(XCC_FLAGS_$(CONFIG)),$(XCC_FLAGS_$(CONFIG)),$(XCC_FLAGS))
-XCC_XC_FLAGS  := $(if $(XCC_XC_FLAGS_$(CONFIG)),$(XCC_XC_FLAGS_$(CONFIG)),$(XCC_XC_FLAGS))
-XCC_C_FLAGS   := $(if $(XCC_C_FLAGS_$(CONFIG)),$(XCC_C_FLAGS_$(CONFIG)),$(XCC_C_FLAGS))
-XCC_CPP_FLAGS := $(if $(XCC_CPP_FLAGS_$(CONFIG)),$(XCC_CPP_FLAGS_$(CONFIG)),$(XCC_CPP_FLAGS))
-
-XCC_ASM_FLAGS := $(if $(XCC_ASM_FLAGS_$(CONFIG)),$(XCC_ASM_FLAGS_$(CONFIG)),$(XCC_ASM_FLAGS))
-XCC_MAP_FLAGS := $(if $(XCC_MAP_FLAGS_$(CONFIG)),$(XCC_MAP_FLAGS_$(CONFIG)),$(XCC_MAP_FLAGS))
-
+ifeq ($(CONFIG),Default)
+else
+XCC_FLAGS     := XCC_FLAGS_$(CONFIG)
+XCC_XC_FLAGS  := XCC_XC_FLAGS_$(CONFIG)
+XCC_C_FLAGS   := XCC_C_FLAGS_$(CONFIG)
+XCC_CPP_FLAGS := XCC_CPP_FLAGS_$(CONFIG)
+XCC_ASM_FLAGS := XCC_ASM_FLAGS_$(CONFIG)
+XCC_MAP_FLAGS := XCC_MAP_FLAGS_$(CONFIG)
+endif
 
 ARCH ?= xs1b
 
 BUILD_NAME ?= $(CONFIG)
-WORKING_DIR ?= .build_$(BUILD_NAME)
+WORKING_DIR ?= $(if $(filter Default,$(CONFIG)),.build,.build_$(BUILD_NAME))
 TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
-BIN_DIR=$(BASE_DIR)/bin/$(CONFIG)
+BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 LIB_DIR=$(BASE_DIR)/lib/$(ARCH)
 
 INCLUDE_DIRS ?= *
@@ -473,8 +474,11 @@ $(FAKE_INC_DIR)/ : | $(TARGET_DIR)/
 $(TARGET_DIR)/ :
 	@-$(call MKDIR, $(TARGET_DIR)) > $(NULL)
 
+ifeq ($(CONFIG),Default)
+else
 $(BIN_DIR)/:
 	@-$(call MKDIR,$(BIN_DIR)) > $(NULL)
+endif
 
 $(LIB_DIR)/:
 	@-$(call MKDIR,$(LIB_DIR)) > $(NULL)
