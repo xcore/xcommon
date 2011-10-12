@@ -246,7 +246,7 @@ endif
 
 ifeq ($(CONFIG),Default)
 else
-ifeq ($(BUILDING_LIBARY),)
+ifeq ($(BUILDING_LIBRARY),)
 XCC_FLAGS     := $(XCC_FLAGS_$(CONFIG))
 XCC_XC_FLAGS  := $(XCC_XC_FLAGS_$(CONFIG))
 XCC_C_FLAGS   := $(XCC_C_FLAGS_$(CONFIG))
