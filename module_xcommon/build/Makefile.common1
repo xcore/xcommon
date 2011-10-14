@@ -446,7 +446,7 @@ OPTIONAL_HEADER_FLAGS=$(foreach x,$(OPTIONAL_HEADERS),$(call OPTIONAL_HEADER_FLA
 VPATH += $(FAKE_INC_DIR)
 VPATH += $(SEARCH_DIR)
 
-REMOTE_TRAILING_SLASH = $(subst !!!,,$(subst / !!!,!!!,$1 !!!))
+REMOVE_TRAILING_SLASH = $(strip $(subst !!!,,$(subst / !!!, !!!,$1 !!!)))
 
 LIB_FILES := $(foreach x, $(FULL_LIB_DIRS), $(call WILDCARD,$x/xs1b/lib*.a))
 EXCLUDE_LIB_PATTERN = $(foreach x, $(EXCLUDE_LIBS), %lib$x.a)
@@ -455,7 +455,6 @@ LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
 #remove duplicates
 LIB_DIRS := $(sort $(LIB_DIRS))
 LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L $(call TO_OS, $(call REMOVE_TRAILING_SLASH,$(call DOTDOT,$x)))) $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
-
 define NO_SOURCE
 
 

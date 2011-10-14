@@ -3,13 +3,33 @@
 #include <string>
 #include <set>
 
+#define DEBUG 1
+
+void ASSERT_XML_EXISTS(std::string message, void *p) {
+
+  if (!p) {
+#if DEBUG
+    std::cerr << "ERROR:: missing XML" << std::endl;
+    std::cerr << message << std::endl;
+#endif
+    exit(0);
+  }
+}
+
+void check_and_advise(int line, bool test) {
+  if (!test) {
+#if DEBUG
+    std::cerr << "project xml fail: line " << line << std::endl;
+#endif
+    exit(0);
+  }
+}
+
+#define CHECK_AND_ADVISE(T) check_and_advise(__LINE__, T)
+
 int main(int argc, char *argv[]) {
 
-  if (argc < 3)
-    exit(1);
-
   TiXmlDocument project(argv[1]);
-
   bool loadOkay = project.LoadFile();
 
   if (!loadOkay) {
@@ -17,6 +37,32 @@ int main(int argc, char *argv[]) {
     std::cerr << project.ErrorDesc() << std::endl;
     exit(1);
   }
+
+
+  TiXmlNode *cproject_xml = project.FirstChild("cproject");
+
+  CHECK_AND_ADVISE(cproject_xml != NULL);
+
+  TiXmlNode *storage_module_xml =
+      cproject_xml->FirstChildElement("storageModule");
+
+  CHECK_AND_ADVISE(storage_module_xml != NULL);
+
+  TiXmlNode *cconfiguration_xml =
+    storage_module_xml->FirstChildElement("cconfiguration");
+
+  CHECK_AND_ADVISE(cconfiguration_xml != NULL);
+
+  const char *cconfiguration_id =
+    cconfiguration_xml->ToElement()->Attribute("id");
+
+  CHECK_AND_ADVISE(cconfiguration_id != NULL);
+
+  std::cerr << cconfiguration_id << std::endl;
+  std::cerr << "cproject\n";
+
+  exit(0);
+
 
   if (!project.FirstChild("projectDescription")) {
     project.Print(stdout);
