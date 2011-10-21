@@ -13,7 +13,7 @@ APP_NAME = auto_proj
 # If the variable XCC_MAP_FLAGS is set it overrides the flags passed to 
 # xcc for the final link (mapping) stage.
 
-CC_FLAGS = -Os
+CC_FLAGS = -Os -g
 
 
 #=============================================================================

@@ -2,30 +2,126 @@
 #include "tinyxml.h"
 #include <string>
 #include <set>
+#include <vector>
 
-#define DEBUG 1
+TiXmlElement *getOrCreateChild(TiXmlElement *node,
+                               std::string tag,
+                               std::string attrPattern,
+                               std::string attrValue,
+                               bool &is_new_node)
+{
+  TiXmlElement *child = node->FirstChildElement(tag.c_str());
+  is_new_node = false;
+  while (child) {
+    const char *attr0 = child->Attribute(attrPattern.c_str());
+    if (attr0) {
+      std::string attr = std::string(attr0);
+      if (attr.find(attrValue) == 0) {
+        break;
+      }
+    }
+    child = child->NextSiblingElement(tag.c_str());
+  }
+  if (!child) {
+    child = new TiXmlElement(tag.c_str());
+    is_new_node = true;
+  }
+  return child;
+}
 
-void ASSERT_XML_EXISTS(std::string message, void *p) {
 
-  if (!p) {
-#if DEBUG
-    std::cerr << "ERROR:: missing XML" << std::endl;
-    std::cerr << message << std::endl;
-#endif
-    exit(0);
+void add_option_node(TiXmlElement *node, std::string option_id,
+                   std::set<std::string> &orig_includes)
+{
+  bool is_new_node;
+  TiXmlElement *option = getOrCreateChild(node,
+                                          "option",
+                                          "id",
+                                          option_id,
+                                          is_new_node);
+
+  std::set<std::string> includes = orig_includes;
+
+
+
+  TiXmlElement *listOptionValue = option->FirstChildElement("listOptionValue");
+
+  while (listOptionValue) {
+    const char *val0 = listOptionValue->Attribute("value");
+    if (val0) {
+      std::string val(val0);
+      includes.erase(val);
+    }
+    listOptionValue = listOptionValue->NextSiblingElement("listOptionValue");
+  }
+
+
+  std::set<std::string>::iterator i;
+  for(i=includes.begin(); i!=includes.end(); i++) {
+    listOptionValue = new TiXmlElement("listOptionValue");
+    listOptionValue->SetAttribute("builtIn","false");
+    listOptionValue->SetAttribute("value",(*i).c_str());
+    option->InsertEndChild(*listOptionValue);
+  }
+
+  if (is_new_node) {
+    std::string option_id_num = option_id;
+    option_id_num.append(".11111");
+    option->SetAttribute("id",option_id_num.c_str());
+    option->SetAttribute("valueType","includePath");
+    option->SetAttribute("superClass",option_id.c_str());
+    node->InsertEndChild(*option);
   }
 }
 
-void check_and_advise(int line, bool test) {
-  if (!test) {
-#if DEBUG
-    std::cerr << "project xml fail: line " << line << std::endl;
-#endif
-    exit(0);
+void add_tool_node(TiXmlElement *node, std::string tool_id,
+                   std::set<std::string> &includes) {
+  bool is_new_node;
+  TiXmlElement *tool = getOrCreateChild(node,
+                                        "tool",
+                                        "id",
+                                        tool_id,
+                                        is_new_node);
+
+  add_option_node(tool, "gnu.c.compiler.option.include.paths", includes);
+  add_option_node(tool, "com.xmos.c.compiler.option.include.paths", includes);
+
+  if (is_new_node) {
+    std::string tool_id_num = tool_id;
+    tool_id_num.append(".11111");
+    tool->SetAttribute("id",tool_id_num.c_str());
+    tool->SetAttribute("name",tool_id.c_str());
+    tool->SetAttribute("superClass",tool_id.c_str());
+    node->InsertEndChild(*tool);
   }
+
 }
 
-#define CHECK_AND_ADVISE(T) check_and_advise(__LINE__, T)
+void process(TiXmlElement *node, std::string path[], int i, int n,
+             std::set<std::string> &includes)
+{
+  if (i == n) {
+    const char *id0 = node->Attribute("id");
+    if (id0) {
+      std::string id = std::string(id0);
+      if (id.find("com.xmos.cdt.toolchain")==0) {
+        add_tool_node(node, "com.xmos.cdt.xc.compiler", includes);
+        add_tool_node(node, "com.xmos.cdt.xc.compiler.base", includes);
+        add_tool_node(node, "com.xmos.cdt.c.compiler.base", includes);
+        add_tool_node(node, "com.xmos.cdt.cpp.compiler.base", includes);
+        add_tool_node(node, "com.xmos.cdt.core.assembler.base", includes);
+      }
+    }
+  }
+  else {
+    TiXmlElement *child = node->FirstChildElement(path[i].c_str());
+    while (child) {
+      process(child, path, i+1, n, includes);
+      child = child->NextSiblingElement(path[i].c_str());
+    }
+  }
+  return;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -38,77 +134,29 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  std::string path[] = {"storageModule",
+                        "cconfiguration",
+                        "storageModule",
+                        "configuration",
+                        "folderInfo",
+                        "toolChain"};
 
-  TiXmlNode *cproject_xml = project.FirstChild("cproject");
+  TiXmlElement *cproject = project.FirstChildElement("cproject");
 
-  CHECK_AND_ADVISE(cproject_xml != NULL);
-
-  TiXmlNode *storage_module_xml =
-      cproject_xml->FirstChildElement("storageModule");
-
-  CHECK_AND_ADVISE(storage_module_xml != NULL);
-
-  TiXmlNode *cconfiguration_xml =
-    storage_module_xml->FirstChildElement("cconfiguration");
-
-  CHECK_AND_ADVISE(cconfiguration_xml != NULL);
-
-  const char *cconfiguration_id =
-    cconfiguration_xml->ToElement()->Attribute("id");
-
-  CHECK_AND_ADVISE(cconfiguration_id != NULL);
-
-  std::cerr << cconfiguration_id << std::endl;
-  std::cerr << "cproject\n";
-
-  exit(0);
-
-
-  if (!project.FirstChild("projectDescription")) {
-    project.Print(stdout);
-    exit(0);
-  }
-
-  TiXmlNode *projects_xml =
-    project.FirstChild("projectDescription")->ToElement()->FirstChild("projects");
-
-
-  std::set<std::string> current_projects;
-
-
-  if (projects_xml) {
-    TiXmlNode *project_xml =
-      projects_xml->FirstChildElement("project");
-
-    while (project_xml) {
-      std::string proj(project_xml->ToElement()->GetText());
-      TiXmlNode *next_project_xml = project_xml->NextSibling("project");
-      current_projects.insert(proj);
-      projects_xml->RemoveChild(project_xml);
-      project_xml = next_project_xml;
-    }
-
-
+  if (cproject) {
+    std::set<std::string> includes;
+    includes.insert("\"${XMOS_TOOL_PATH}/target/include\"");
+    includes.insert("\"${XMOS_TOOL_PATH}/target/include/c++/4.2.1/xcore-xmos-elf\"");
+    includes.insert("\"${XMOS_TOOL_PATH}/target/include/c++/4.2.1\"");
+    includes.insert("\"${XMOS_TOOL_PATH}/target/include/gcc\"");
     for (int i=2;i<argc;i++) {
-      std::string new_proj(argv[i]);
-      current_projects.insert(new_proj);
-
+      std::string include(argv[i]);
+      include.insert(0,"\"${workspace_loc:/");
+      include.append("}\"");
+      includes.insert(include);
     }
-
-  for(std::set<std::string>::iterator proj = current_projects.begin();
-      proj != current_projects.end();
-      proj++)
-    {
-      TiXmlElement* new_element = new TiXmlElement("project");
-      TiXmlText* txt = new TiXmlText((*proj).c_str());
-      new_element->LinkEndChild(txt);
-      projects_xml->InsertEndChild(*new_element);
-    }
-
+    process(cproject, path, 0, 6, includes);
   }
-
-
-  project.Print(stdout);
-
+   project.Print(stdout);
   return 0;
 }
