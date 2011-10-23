@@ -575,7 +575,7 @@ eclipse_config:
 	@echo "Updating eclipse config"
 	@"$(AUTO_PROJ)" ../.cproject $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
 	@cp .tmpproject  ../.cproject
-	$(call RM,.tmpproject)
+	@$(call RM,.tmpproject)
 else
 eclipse_config:
 	@echo "Updating eclipse config"
@@ -586,7 +586,7 @@ endif
 endif
 
 ifeq ($(AUTO_ECLIPSE),1)
-ECLIPSE_CONFIG=$(if $(wildcard ../.cproject),$(if $(strip $(ECLIPSE_PROJECTS)),eclipse_config,),)
+ECLIPSE_CONFIG=$(if $(wildcard ../.cproject),eclipse_config,)
 else
 ECLIPSE_CONFIG=
 endif

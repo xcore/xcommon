@@ -98,7 +98,8 @@ void add_tool_node(TiXmlElement *node, std::string tool_id,
 }
 
 void process(TiXmlElement *node, std::string path[], int i, int n,
-             std::set<std::string> &includes)
+             std::set<std::string> &includes,
+             std::set<std::string> &old_includes)
 {
   if (i == n) {
     const char *id0 = node->Attribute("id");
@@ -106,17 +107,17 @@ void process(TiXmlElement *node, std::string path[], int i, int n,
       std::string id = std::string(id0);
       if (id.find("com.xmos.cdt.toolchain")==0) {
         add_tool_node(node, "com.xmos.cdt.xc.compiler", includes);
-        add_tool_node(node, "com.xmos.cdt.xc.compiler.base", includes);
-        add_tool_node(node, "com.xmos.cdt.c.compiler.base", includes);
-        add_tool_node(node, "com.xmos.cdt.cpp.compiler.base", includes);
-        add_tool_node(node, "com.xmos.cdt.core.assembler.base", includes);
+        add_tool_node(node, "com.xmos.cdt.xc.compiler.base", old_includes);
+        add_tool_node(node, "com.xmos.cdt.c.compiler.base", old_includes);
+        add_tool_node(node, "com.xmos.cdt.cpp.compiler.base", old_includes);
+        add_tool_node(node, "com.xmos.cdt.core.assembler.base", old_includes);
       }
     }
   }
   else {
     TiXmlElement *child = node->FirstChildElement(path[i].c_str());
     while (child) {
-      process(child, path, i+1, n, includes);
+      process(child, path, i+1, n, includes, old_includes);
       child = child->NextSiblingElement(path[i].c_str());
     }
   }
@@ -145,17 +146,26 @@ int main(int argc, char *argv[]) {
 
   if (cproject) {
     std::set<std::string> includes;
+    std::set<std::string> old_includes;
     includes.insert("\"${XMOS_TOOL_PATH}/target/include\"");
     includes.insert("\"${XMOS_TOOL_PATH}/target/include/c++/4.2.1/xcore-xmos-elf\"");
     includes.insert("\"${XMOS_TOOL_PATH}/target/include/c++/4.2.1\"");
     includes.insert("\"${XMOS_TOOL_PATH}/target/include/gcc\"");
+
+    old_includes.insert("\"${XMOS_DOC_PATH}/../target/include\"");
+    old_includes.insert("\"${XMOS_DOC_PATH}/../target/include/c++/4.2.1/xcore-xmos-elf\"");
+    old_includes.insert("\"${XMOS_DOC_PATH}/../target/include/c++/4.2.1\"");
+    old_includes.insert("\"${XMOS_DOC_PATH}/../target/include/gcc\"");
+
+
     for (int i=2;i<argc;i++) {
       std::string include(argv[i]);
       include.insert(0,"\"${workspace_loc:/");
       include.append("}\"");
       includes.insert(include);
+      old_includes.insert(include);
     }
-    process(cproject, path, 0, 6, includes);
+    process(cproject, path, 0, 6, includes, old_includes);
   }
    project.Print(stdout);
   return 0;
