@@ -87,6 +87,8 @@ XCOMMON_MAKEFILE = $(subst $(CHAR2),\ ,$(filter %Makefile.common1,$(MAKEFILE_LIS
 
 MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%,$(XCOMMON_MAKEFILE))/..)
 
+XCOMMON_DIR = $(MODULE_XCOMMON_DIR)/..
+
 SP0 =
 SP = $(SP0) $(SP0)
 
@@ -105,7 +107,7 @@ CAT=type
 OS=WINDOWS
 SHELL=$(windir)\system32\cmd.exe
 TO_OS=$(subst /,\,$(1))
-AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj.exe)"
+AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj.exe)
 CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 else
 PATHSEP=:
@@ -117,12 +119,10 @@ RMRF=rm -rf $(1)
 MKDIR=mkdir -p $(1)
 NULL=/dev/null
 CAT=cat
-OS=UNIX
 TO_OS=$(1)
-AUTO_PROJ = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/auto_proj)"
+AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj)
 CHANGEDEP = sed -e 's/\(\/[^ .\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 endif
-
 
 .SUFFIXES:
 
@@ -290,6 +290,8 @@ GET_LIBRARY = $(if $(filter $(MODULE_LIBRARIES),$1),$(firstword $(filter $(MODUL
 
 CURRENT_REPO = $(notdir $(abspath ..))
 ECLIPSE_PROJECTS :=
+EXTERNAL_INCLUDE_DIRS :=
+REPO_PATHS :=
 
 define INCLUDE_MODULE
 LIBRARY :=
@@ -303,6 +305,7 @@ ifeq ($$(words $$(CURRENT_MODULE_DIR)),1)
 else
 $$(error Multiple copies of $$(CURRENT_MODULE) found: $$(CURRENT_MODULE_DIR))
 endif
+
 MODULE_XCC_FLAGS :=
 MODULE_XCC_C_FLAGS :=
 MODULE_XCC_XC_FLAGS :=
@@ -315,6 +318,10 @@ VERSION :=
 REPO := $$(notdir $$(abspath $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/..))
 REPO := $$(if $$(filter $$(REPO),$$(ECLIPSE_PROJECTS)),,$$(REPO))
 REPO := $$(if $$(filter $$(REPO),$$(CURRENT_REPO)),,$$(REPO))
+
+REPO_PATH := $$(patsubst %/$$(CURRENT_MODULE),%,$$(CURRENT_MODULE_DIR))
+REPO_PATHS := $$(filter-out $$(REPO_PATH),$$(REPO_PATHS)) $$(REPO_PATH)
+
 ECLIPSE_PROJECTS += $$(REPO)
 
 REQUIRED_VERSION := $$(call GET_MODULE_VERSION,$1)
@@ -337,6 +344,7 @@ PREBUILD_MAKEFILES := $$(if $$(LIBRARY), $$(if $$(call WILDCARD,$$(CURRENT_MODUL
 
 FULL_SOURCE_DIRS := $(FULL_SOURCE_DIRS) $$(MODULE_SOURCE_DIRS)
 FULL_INCLUDE_DIRS := $(FULL_INCLUDE_DIRS) $$(MODULE_INCLUDE_DIRS)
+EXTERNAL_INCLUDE_DIRS := $(EXTERNAL_INCLUDE_DIRS) $$(MODULE_INCLUDE_DIRS)
 
 FULL_LIB_DIRS := $(FULL_LIB_DIRS) $$(foreach x,$$(LIB_DIRS), $$(call EXPAND_DIR, $$(CURRENT_MODULE_DIR)/$$x))
 
@@ -438,6 +446,13 @@ HEADER_STATUS_FILES = $(HEADER_DEP_FILES:%.dh=%.hstat)
 
 QUOTED_INCLUDE_DIRS = $(foreach x, $(FULL_INCLUDE_DIRS),"$(call DOTDOT,$x)")
 INCLUDE_FLAGS = $(foreach x,$(QUOTED_INCLUDE_DIRS),-I$(call UNMANGLE_NO_ESCAPE,$x))
+
+WORKSPACE_RELATIVE_INCLUDE_DIRS = \
+  $(foreach x,$(EXTERNAL_INCLUDE_DIRS),\
+      $(foreach p,$(REPO_PATHS),$(patsubst $p/%,$(notdir $p)/%,$(filter $p%,$x))))
+
+
+
 
 OPTIONAL_HEADER_FLAG=$(if $(filter $1,$(NOTDIR_HEADER_FILES)),-D__$(strip $(subst .,_,$1))_exists__=1,)
 
@@ -551,35 +566,27 @@ ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
 
-
+ifeq ($(wildcard $(AUTO_PROJ)),)
+eclipse_config:
+	@echo "Warning: Cannot updating eclipse config (no auto_proj tool)"
+else
 ifeq ($(WINFLAG),0)
-CURRENT_PROJECTS = $(shell sed -n '/<projects>/,/<\/projects/p' ../.project)
-CURRENT_PROJECTS := $(subst <projects>,,$(CURRENT_PROJECTS))
-CURRENT_PROJECTS := $(subst </projects>,,$(CURRENT_PROJECTS))
-CURRENT_PROJECTS := $(subst </project>,,$(CURRENT_PROJECTS))
-CURRENT_PROJECTS := $(patsubst <project>%,%,$(CURRENT_PROJECTS))
-
-ECLIPSE_PROJECTS := $(filter-out $(CURRENT_PROJECTS),$(ECLIPSE_PROJECTS))
-ECLIPSE_PROJECTS := $(CURRENT_PROJECTS) $(ECLIPSE_PROJECTS)
-ECLIPSE_PROJECTS := $(foreach x,$(ECLIPSE_PROJECTS),<project>$x<\/project>)
-
-
 eclipse_config:
 	@echo "Updating eclipse config"
-	@sed -e 's/<project>.*<\/project>//g' < ../.project > .tmpproject
-	@sed -i -e 's/<projects>/<projects>$(ECLIPSE_PROJECTS)/g' .tmpproject
-	@$(call CP,.tmpproject ../.project)
-	@$(call RM,.tmpproject)
+	@"$(AUTO_PROJ)" ../.cproject $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
+	@cp .tmpproject  ../.cproject
+	$(call RM,.tmpproject)
 else
 eclipse_config:
 	@echo "Updating eclipse config"
-	@$(AUTO_PROJ) ..\.project $(ECLIPSE_PROJECTS) > .tmpproject
-	@cmd /c more .tmpproject > ..\.project
+	@"$(AUTO_PROJ)" ..\.cproject $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
+	@cmd /c more .tmpproject > ..\.cproject
 	@$(call RM,.tmpproject)
+endif
 endif
 
 ifeq ($(AUTO_ECLIPSE),1)
-ECLIPSE_CONFIG=$(if $(wildcard ../.project),$(if $(strip $(ECLIPSE_PROJECTS)),eclipse_config,),)
+ECLIPSE_CONFIG=$(if $(wildcard ../.cproject),$(if $(strip $(ECLIPSE_PROJECTS)),eclipse_config,),)
 else
 ECLIPSE_CONFIG=
 endif
