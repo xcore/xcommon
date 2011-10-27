@@ -730,3 +730,7 @@ export:
 	@xmake -f $(XCOMMON_MAKEFILE) do_export
 
 endif
+
+list_includes:
+	@echo **-includes-**
+	@echo $(WORKSPACE_RELATIVE_INCLUDE_DIRS)

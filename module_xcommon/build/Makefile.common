@@ -39,6 +39,9 @@ $(BIN_DIR)/$(APP_NAME).xe:
 clean_common:
 	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory clean_common
 
+list_includes:
+	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory list_includes
+
 # The final target of the build. This is usually dependent on a binary file
 # in the $(BIN_DIR) directory e.g.
 #
