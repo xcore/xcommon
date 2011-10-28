@@ -457,6 +457,8 @@ OBJ_FILES := $(foreach x,$(SOURCE_FILES),$(call TO_OBJ,$(call TO_BUILD_DIR,$x)))
 DEP_FILES_0 = $(CPP_DEP_FILES) $(C_DEP_FILES) $(XC_DEP_FILES) $(ASM_DEP_FILES)
 DEP_FILES = $(patsubst %.d, %.0.d, $(DEP_FILES_0))
 
+FULL_INCLUDE_DIRS := $(filter-out $(EXCLUDE_PATTERN), $(FULL_INCLUDE_DIRS))
+
 HEADER_FILES = $(filter-out $(EXCLUDE_FILES),$(foreach x, $(FULL_INCLUDE_DIRS), $(call WILDCARD,$x/*.h)))
 
 
