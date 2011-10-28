@@ -307,6 +307,10 @@ EXTERNAL_INCLUDE_DIRS :=
 REPO_PATHS :=
 
 
+ALL_CONFIGS = Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABLES)),$(if $(findstring .,$x),,$(subst XCC_FLAGS_,,$x))))
+
+OTHER_CONFIGS = $(filter-out $(CONFIG),$(ALL_CONFIGS))
+
 define INCLUDE_MODULE
 LIBRARY :=
 LIBRARIES :=
@@ -410,7 +414,7 @@ TO_BUILD_DIR1 = $(if $(call IS_RELATIVE,$1),$(call TO_BUILD_DIR0,$1),$(TARGET_DI
 TO_BUILD_DIR = $(call TO_BUILD_DIR1,$(strip $1))
 
 EXCLUDE_PATTERN = $(foreach x, $(EXCLUDE_FILES), %$x)
-
+EXCLUDE_PATTERN += $(foreach x, $(OTHER_CONFIGS), $(foreach y,$(INCLUDE_ONLY_IN_$x),%$y))
 
 C_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.c))
 C_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(C_SOURCE_FILES))
@@ -749,3 +753,4 @@ endif
 list_includes:
 	@echo **-includes-**
 	@echo $(WORKSPACE_RELATIVE_INCLUDE_DIRS)
+
