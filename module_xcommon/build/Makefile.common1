@@ -307,7 +307,7 @@ EXTERNAL_INCLUDE_DIRS :=
 REPO_PATHS :=
 
 
-ALL_CONFIGS = Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABLES)),$(if $(findstring .,$x),,$(subst XCC_FLAGS_,,$x))))
+ALL_CONFIGS = $(sort Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABLES)),$(if $(findstring .,$x),,$(subst XCC_FLAGS_,,$x)))) $(strip $(foreach x,$(filter INCLUDE_ONLY_IN_%,$(.VARIABLES)),$(subst INCLUDE_ONLY_IN_,,$x))))
 
 OTHER_CONFIGS = $(filter-out $(CONFIG),$(ALL_CONFIGS))
 
@@ -556,7 +556,7 @@ $(if $(XCC_$(call LANG,$1)_FLAGS), $(XCC_$(call LANG,$1)_FLAGS), $(XCC_FLAGS))
 endef
 
 define make_flags
-$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS)) $(EXTRA_$(call LANG,$1)_FLAGS)
+$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS)) $(EXTRA_$(call LANG,$1)_FLAGS) -DCONFIG=$(CONFIG)
 endef
 
 ifeq ($(WINFLAG),1)
