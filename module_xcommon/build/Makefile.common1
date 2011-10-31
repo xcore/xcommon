@@ -712,16 +712,16 @@ all: clean_fake_includes
 ifeq ($(BUILDING_LIBRARY),1)
 MODULE_NAME ?= $(subst .,_,$(notdir $(call MANGLE,$(abspath .))))
 EXPORT_DIR = $(BASE_DIR)/export/$(MODULE_NAME)
-EXPORT_LIB_DIR = $(EXPORT_DIR)/lib/$(BUILD_NAME)
+EXPORT_LIB_DIR = $(EXPORT_DIR)/lib/$(ARCH)
 
 $(EXPORT_DIR):
 	@echo Creating export directory
 	@$(call MKDIR,$(EXPORT_DIR))	
 
 $(EXPORT_LIB_DIR)/lib%.a:
-	@$(call MKDIR,$(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME))	
+	@$(call MKDIR,$(BASE_DIR)/export/$(MODULE_NAME)/lib/$(ARCH))
 	@echo Copying library
-	@$(call CP,$(LIB_DIR)/lib$*.a $(BASE_DIR)/export/$(MODULE_NAME)/lib/$(BUILD_NAME)/lib$*.a)
+	@$(call CP,$(LIB_DIR)/lib$*.a $(BASE_DIR)/export/$(MODULE_NAME)/lib/$(ARCH)/lib$*.a)
 
 %.export:
 	@echo Exporting directory: $*
