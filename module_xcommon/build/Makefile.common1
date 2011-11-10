@@ -188,8 +188,11 @@ MY_SRCDIR = $(BASE_DIR)/src
 else
 MY_SRCDIR = $(BASE_DIR)
 endif
-
+ifeq ($(BUILDING_LIBRARY),)
 UM := $(USED_MODULES)
+else
+UM :=
+endif
 
 FIND_MODULE = $(BASE_DIR)/../$(filter $1%,$(UM))
 
@@ -232,7 +235,6 @@ ifeq ($(strip $(APP_NAME)),)
 APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
 
-
 ifeq ($(BUILDING_LIBRARY),)
 CONFIG ?= Default
 else
@@ -271,13 +273,19 @@ endif
 
 ARCH ?= xs1b
 
+ifeq ($(BUILDING_LIBRARY),1)
+BUILD_NAME := $(CONFIG)
+WORKING_DIR := $(if $(filter Default,$(CONFIG)),.build,.build_$(CONFIG))
+else
 BUILD_NAME ?= $(CONFIG)
-WORKING_DIR ?= $(if $(filter Default,$(CONFIG)),.build,.build_$(BUILD_NAME))
+WORKING_DIR ?= $(if $(filter Default,$(CONFIG)),.build,.build_$(CONFIG))
+endif
 TARGET_DIR = ./$(WORKING_DIR)
 FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 LIB_DIR=$(BASE_DIR)/lib/$(ARCH)
+
 
 INCLUDE_DIRS ?= *
 SOURCE_DIRS ?= *
@@ -586,6 +594,8 @@ endef
 
 $(foreach x,$(SOURCE_FILES),$(eval $(call OBJ_RULE,$x)))
 
+
+
 ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
@@ -621,10 +631,10 @@ report_modules:
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
 else
-$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/
+$(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
 endif
@@ -640,20 +650,22 @@ endif
 
 
 else
-NO_PREBUILD := 1
-export NO_PREBUILD
+#NO_PREBUILD := 1
+#export NO_PREBUILD
 .PHONY: prebuild
 
 
 %.prebuild: prebuild
+	@echo ***Building $(notdir $(patsubst %/,%,$(dir $*)))***
 	@cd $(dir $*) && xmake --no-print-directory -f $(notdir $*) all
 
 $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
-	@xmake --no-print-directory $(BIN_DIR)/$*.xe
+	@echo ***Building main application***
+	@xmake NO_PREBUILD=1 --no-print-directory $(BIN_DIR)/$*.xe
 endif
 
 define DEP_RULE
-$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) | report_modules $(TARGET_DIR)/
+$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) | $(TARGET_DIR)/
 	@echo Creating dependencies for $(call UNMANGLE, $(notdir $1))
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$$(call DOTDOT,$$<)" > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
@@ -663,13 +675,19 @@ endef
 
 $(foreach x,$(SOURCE_FILES),$(eval $(call DEP_RULE,$x)))
 
-
 lib: $(LIB_DIR)/lib$(LIBRARY).a
 
 ifneq ($(MAKECMDGOALS),clean_common)
 ifneq ($(MAKECMDGOALS),clean_lib)
 ifneq ($(MAKECMDGOALS),list_includes)
+ifeq  ($(BUILDING_LIBRARY),1)
 -include $(DEP_FILES_0)
+else
+ifeq ($(NO_PREBUILD),1)
+-include $(DEP_FILES_0)
+else
+endif
+endif
 endif
 endif
 endif
