@@ -1,6 +1,6 @@
 .. _makefile_libraries:
 
-Using XMOS makefiles to create binary libraries
+Using XMOS Makefiles to create binary libraries
 ===============================================
 
 The default module system used by XMOS application makefiles includes
@@ -10,8 +10,10 @@ source.
 
 A module that is to be built into a library needs to be split into
 source that is used to build the library and source/includes that are
-to be distributed with the library. For example, we could have the
-following structure::
+to be distributed with the library. For example, you could specify the
+following structure.
+
+  ::
 
     module_my_library/
            Makefile
@@ -23,8 +25,8 @@ following structure::
            include/
               my_library.h
 
-The idea in this structure is that the source file ``my_library.xc``
-will be compiled into a library and that library will be distributed
+The intention with this structure is that the source file ``my_library.xc``
+is compiled into a library and that library will be distributed
 along with the ``src`` and ``include`` directories (but not the
 ``libsrc`` directory).
 
@@ -35,15 +37,18 @@ The module_build_info file
 
 To build a binary library some extra variables need to be set in the
 ``module_build_info`` file. One of the ``LIBRARY`` or ``LIBRARIES``
-variables has to be set.
+variables must be set.
 
 .. _makefile_libaries_option_library:
 
 .. xoption:: LIBRARY
 
-  This variable specifies the name of the library to be created e.g.::
-
-        LIBRARY = my_library
+  This variable specifies the name of the library to be created, 
+  for example:
+  
+  ::
+  
+    LIBRARY = my_library
 
 .. _makefile_libaries_option_libraries:
 
@@ -51,7 +56,11 @@ variables has to be set.
 
   This variable can be set instead of the ``LIBRARY`` variable to
   specify that several libraries should be built (with different build
-  flags) e.g.::
+  flags), for example:
+  
+  |newpage|
+  
+  ::
 
         LIBRARY = my_library my_library_debug
 
@@ -74,7 +83,9 @@ variables has to be set.
 
   This variable should contain a space separated list of directories
   that are *not* to be compiled into the library and distributed as
-  source instead e.g.::
+  source instead, for example:
+  
+  ::
 
      EXPORT_SOURCE_DIRS = src include
 
@@ -89,11 +100,13 @@ source-only modules). The contents of this Makefile just needs to be::
   XMOS_MAKE_PATH ?= ../..
   include $(XMOS_MAKE_PATH)/xcommon/module_xcommon/build/Makefile.library
 
-This makefile has two targets. Doing ``make all`` will build the
+This Makefile has two targets. Running ``make all`` will build the
 libraries. Calling the target ``make export`` will create a copy of
 the module in a directory called ``export`` which does not contain the
 library source. For the above example, the exported module would look
-like this::
+like the following.
+
+  ::
 
     export/
       module_my_library/

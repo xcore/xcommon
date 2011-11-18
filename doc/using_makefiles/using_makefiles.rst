@@ -1,33 +1,38 @@
 .. _xmos_makefile_manual:
 
-Using XMOS makefiles
+Using XMOS Makefiles
 ====================
 
 Projects created by the XMOS Development Environment have their build
-controlled by Makefiles. These makefiles execute the build using the
-program xmake which is a port of
+controlled by Makefiles. These Makefiles execute the build using the
+program ``xmake`` which is a port of
 `Gnu Make <http://www.gnu.org/software/make/>`_. The build is
 executable either from within the XDE or from the command
 line by calling ``xmake`` directly.
 
-An application will be made up of source code unique to the
-application and, optionally, source code from modules of common code
-or binary libraries.
+You do not need to understand the Gnu Makefile language
+to develop applications using the XMOS tools. The **common XMOS Makefile**
+provides support for projects, applications and modules. 
+You need only specify the required properties of the build in
+**Project Makefiles** and **Application Makefiles**.
 
 .. _xmos_makefile_manual_project_structure:
 
 Projects, Applications and Modules
 ----------------------------------
 
-When developing application, the working area is described in terms of
+An application is made up of source code unique to the
+application and, optionally, source code from modules of common code
+or binary libraries. When developing an application, the working area 
+is described in terms of 
 *workspaces*, *projects*, *applications* and *modules*.
 
 Workspace
-   A workspace is a container for several *projects*.
+   A *workspace* is a container for several projects.
 
 Projects
-   A *project* is a directory possibly containing several *applications* and
-   *modules* plus other files relating to a particular project. These
+   A *project* is a directory possibly containing several applications and
+   modules plus other files relating to a particular project. These
    projects appear at the top level in the project explorer in the XDE.
    A project may contain the code for a particular board or reference
    design or be a software component containing modules for other
@@ -35,7 +40,7 @@ Projects
 
 Applications
    An *application* is a directory containing source files and a
-   Makefile that builds into a single executable file (a ``.xe`` file).
+   Makefile that builds into a single executable (``.xe``) file.
    By convention application directories start with the prefix ``app_``.
 
 Modules
@@ -44,12 +49,16 @@ Modules
   used by applications.
   by convention module directories start with the prefix ``module_``.
 
+|newpage|
+  
 .. _xmos_makefile_manual_project_example:
 
 Example Structure
 .................
 
-Here is an example workspace structure::
+An example workspace structure is shown below.
+
+::
 
    sw_avb/
        app_avb_demo1/
@@ -63,67 +72,65 @@ Here is an example workspace structure::
    sc_ethernet/
        module_ethernet/
 
-There are 3 projects within this workspace: ``sw_avb``, ``sc_xtcp``
-and ``sc_ethernet``. The ``sw_avb`` projects contains two applications
-- each of which will build to a separate binary. These applications can
-use source from the modules within the projects. The application
-can use both modules from their own project (``module_avb1`` and
-``module_avb2``) and modules from other projects as well
+There are three projects within this workspace: ``sw_avb``, ``sc_xtcp``
+and ``sc_ethernet``. 
+The ``sw_avb`` project contains two applications, each of which builds 
+to a separate binary. These applications can use source from the modules 
+within the projects and can use modules from their own project 
+(``module_avb1`` and ``module_avb2``) and from other projects 
 (``module_xtcp``, ``module_zeroconf`` and ``module_ethernet``).
 
 .. _xmos_makefile_manual_app_makefile:
 
-The application makefile
+The Application Makefile
 ------------------------
 
-Every application directory should have a file called `Makefile`
-within it. You do not need to understand all of the Gnu Makefile
-language to use this file. Within the file are several variable
-assignments. The main build is controlled by a common XMOS Makefile
-that is included in the application Makefile. By default all
-source files within the application directory and its sub-directories
-are compiled into the application.
+Every application directory should contain a file named ``Makefile``
+that includes the common XMOS Makefile.
+The common Makefile controls the build, by default including all
+source files within the application directory and its sub-directories.
+The application Makefile supports the following variable assignments.
 
 .. _xmos_makefile_option_xcc_flags:
 
 .. xoption:: XCC_FLAGS*[_config]*
 
-  This option specifies the flags passed to xcc during the build. The
+  Specifies the flags passed to xcc during the build. This
   option sets the flags for the particular build configuration *config*. If no
-  suffix is given it sets the flags for the default build configuration.
+  suffix is given, it sets the flags for the default build configuration.
 
 .. _xmos_makefile_option_xcc_c_flags:
 
 .. xoption:: XCC_C_FLAGS*[_config]*
 
-  If set these flags will be passed to xcc instead of ``XCC_FLAGS``
-  for all .c files. The
+  If set, these flags are passed to xcc instead of ``XCC_FLAGS``
+  for all ``.c`` files. This
   option sets the flags for the particular build configuration *config*. If no
-  suffix is given it sets the flags for the default build configuration.
+  suffix is given, it sets the flags for the default build configuration.
 
 .. _xmos_makefile_option_xcc_asm_flags:
 
 .. xoption:: XCC_ASM_FLAGS*[_config]*
 
-  If set these flags will be passed to xcc instead of ``XCC_FLAGS``
-  for all .s or .S files. The
+  If set, these flags are passed to xcc instead of ``XCC_FLAGS``
+  for all ``.s`` or ``.S`` files. This
   option sets the flags for the particular build configuration *config*. If no
-  suffix is given it sets the flags for the default build configuration.
+  suffix is given, it sets the flags for the default build configuration.
 
 .. _xmos_makefile_option_xcc_map_flags:
 
 .. xoption:: XCC_MAP_FLAGS*[_config]*
 
-  If set these flags will be passed to xcc for the final link stage
-  instead of ``XCC_FLAGS``. The
+  If set, these flags are passed to xcc for the final link stage
+  instead of ``XCC_FLAGS``. This
   option sets the flags for the particular build configuration *config*. If no
-  suffix is given it sets the flags for the default build configuration.
+  suffix is given, it sets the flags for the default build configuration.
 
 .. _xmos_makefile_option_xcc_filename_flags:
 
 .. xoption:: XCC_FLAGS_*filename*
 
-  This option will overide the flags passed to xcc for the filename
+  Overides the flags passed to xcc for the filename
   specified. This option overides the flags for all build configurations.
 
 
@@ -131,29 +138,28 @@ are compiled into the application.
 
 .. xoption:: VERBOSE
 
-  The VERBOSE variable, if set to 1, enables verbose output from the make
-  system.
+  If set to 1, enables verbose output from the make system.
 
 .. _xmos_makefile_option_source_dirs:
 
 .. xoption:: SOURCE_DIRS
 
-  If set this specifies the list of directories, relative to the
-  application directory that will have their contents compiled. By
+  Specifies the list of directories, relative to the
+  application directory, that have their contents compiled. By
   default all directories are included.
 
 .. _xmos_makefile_option_include_dirs:
 
 .. xoption:: INCLUDE_DIRS
 
-  If set this specifies the directories to look for include files
+  Specifies the directories to look for include files
   during the build. By default all directories are included.
 
 .. _xmos_makefile_option_lib_dirs:
 
 .. xoption:: LIB_DIRS
 
-  If set this specifies the directories to look for libraries to link
+  Specifies the directories to look for libraries to link
   into the application during the build. By default all
   directories are included.
 
@@ -161,19 +167,21 @@ are compiled into the application.
 
 .. xoption:: EXCLUDE_FILES
 
-  This option can specify a space separated list of source file names
-  (not including their path) that will not be compiled into the application.
+  Specifies a space-separated list of source file names
+  (not including their path) that are not compiled into the application.
 
 .. _xmos_makefile_option_used_modules:
 
 .. xoption:: USED_MODULES
 
-  This options specifies a space separated list of module directories
-  that will be compiled into the application. The module directories
-  should always be without their full path irrespective of which
-  project they come from e.g.::
+  Specifies a space-separated list of module directories
+  that are compiled into the application. The module directories
+  should always be given without their full path irrespective of which
+  project they come from, for example:
+  
+  ::
 
-          USED_MODULES = module_xtcp module_ethernet
+    USED_MODULES = module_xtcp module_ethernet
 
 .. _xmos_makefile_option_module_libraries:
 
@@ -185,10 +193,10 @@ are compiled into the application.
 
 .. _xmos_makefile_manual_project_makefile:
 
-The project makefile
+The Project Makefile
 --------------------
 
-As well as each application having its own Makefile, the project will
+As well as each application having its own Makefile, the project should
 have a Makefile at the top-level. This Makefile controls building the
 applications within the project. It has one variable assignment within
 it to do this:
@@ -197,27 +205,26 @@ it to do this:
 
 .. xoption:: BUILD_SUBDIRS
 
-  This variable is assigned a space separated list of application
+  Specifies a space-separated list of application
   directories to build.
 
+|newpage|
 
 .. _xmos_makefile_manual_module_build_info:
 
 The module_build_info file
 --------------------------
 
-Each module directory should have a file called ``module_build_info``
-within it. This file informs an application how to build the files
+Each module directory should contain a file named ``module_build_info``. 
+This file informs an application how to build the files
 within the module if the application includes the module in its build.
-
-The file optionally contains several variable assignments. The
-following sections show what variables can be set within this file.
+It can optionally contain several of the following variable assignments.
 
 .. _xmos_makefile_option_dependent_modules:
 
 .. xoption:: DEPENDENT_MODULES
 
-   This options specifies the dependencies of the module. When an
+   Specifies the dependencies of the module. When an
    application includes a module it will also include all its
    dependencies.
 
@@ -225,39 +232,41 @@ following sections show what variables can be set within this file.
 
 .. xoption:: MODULE_XCC_FLAGS
 
-   This option gives the options to be passed to xcc when compiling
+   Specifies the options to pass to xcc when compiling
    source files from within the current module. The definition can
-   reference the ``XCC_FLAGS`` variable from the application Makefile
-   e.g.::
+   reference the ``XCC_FLAGS`` variable from the application Makefile,
+   for example:
+   
+   ::
 
-            MODULE_XCC_FLAGS = $(XCC_FLAGS) -O3
+     MODULE_XCC_FLAGS = $(XCC_FLAGS) -O3
 
 .. _xmos_makefile_option_module_xcc_xc_flags:
 
 .. xoption:: MODULE_XCC_XC_FLAGS
 
-  If set these flags will be passed to xcc instead of ``MODULE_XCC_FLAGS``
-  for all .xc files within the module.
+  If set, these flags are passed to xcc instead of ``MODULE_XCC_FLAGS``
+  for all ``.xc`` files within the module.
 
 .. _xmos_makefile_option_module_xcc_c_flags:
 
 .. xoption:: MODULE_XCC_C_FLAGS
 
-  If set these flags will be passed to xcc instead of ``MODULE_XCC_FLAGS``
-  for all .c files within the module.
+  If set, these flags are passed to xcc instead of ``MODULE_XCC_FLAGS``
+  for all ``.c`` files within the module.
 
 .. _xmos_makefile_option_module_xcc_asm_flags:
 
 .. xoption:: MODULE_XCC_ASM_FLAGS
 
-  If set these flags will be passed to xcc instead of ``MODULE_XCC_FLAGS``
-  for all .s or .S files within the module.
+  If set, these flags are passed to xcc instead of ``MODULE_XCC_FLAGS``
+  for all ``.s`` or ``.S`` files within the module.
 
 .. _xmos_makefile_option_module_optional_headers:
 
 .. xoption:: OPTIONAL_HEADERS
 
-  This option specifies a particular header file to be an optional
+  Specifies a particular header file to be an optional
   configuration header. This header file does not exist in the module
   but is provided by the application using the module. The build
   system will pass the a special macro ``__filename_h_exists__`` to
