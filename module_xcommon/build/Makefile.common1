@@ -38,8 +38,6 @@ ifneq ($(DISABLE_WALL),1)
 XCC_FLAGS += -Wall
 endif
 
-EXTRA_C_FLAGS += -fno-strict-aliasing
-
 
 # Spaces in filenames are a pain, here are some mangling/unmangling functions
 # so we can pass them around make
@@ -222,7 +220,7 @@ $(call REMOVE_MODULE_VERSION,$1)))
 
 SRCDIR = $(if $(call IS_MODULE_DIR,$1),$(call GET_MODULE_DIR,$1),$(MY_SRCDIR)/$1)
 
-
+TARGET := $(patsubst %.xn,%,$(TARGET))
 
 # Work out the directories and file lists
 APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
