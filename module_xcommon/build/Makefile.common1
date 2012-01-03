@@ -38,28 +38,7 @@ ifneq ($(DISABLE_WALL),1)
 XCC_FLAGS += -Wall
 endif
 
-
-# Spaces in filenames are a pain, here are some mangling/unmangling functions
-# so we can pass them around make
-CHAR3=@@@@
-CHAR2=!!!!
-CHAR1=""""
-MANGLE_DRIVES = $(foreach x,$1,$(if $(findstring :,$x),/$(CHAR3)$(subst :,$(CHAR3),$x),$x))
-UNMANGLE_DRIVES = $(subst $(CHAR3),:,$(subst /$(CHAR3),,$1))
-MANGLE=$(call MANGLE_DRIVES,$(subst $(SP),$(CHAR2),$1))
-UNMANGLE=$(call UNMANGLE_DRIVES,$(subst $(CHAR2),\ ,$1))
-REMANGLE=$(subst \ ,$(CHAR2),$1)
-UNMANGLE_NO_ESCAPE=$(call UNMANGLE_DRIVES,$(subst $(CHAR2), ,$1))
-QUOTE_AROUND = $(foreach x,$2,$(if $(filter $(1)%,$x),$(if $(wildcard $x),$x,$x$(CHAR1)),$(if $(wildcard $x),$x,$(CHAR1)$x$(CHAR1))))
-JOIN_QUOTED = $(call MANGLE_DRIVES,$(subst $(CHAR1),,$(subst $(CHAR1) $(CHAR1),$(CHAR2),$1)))
-
-
-WILDCARD = $(call JOIN_QUOTED,$(call QUOTE_AROUND,$(dir $(firstword $(call UNMANGLE_NO_ESCAPE,$1))),$(wildcard $(call UNMANGLE,$1))))
-
-# Adds ../ to a relative path
-IS_RELATIVE = $(if $(filter ./.build_%,$1),1,$(if $(filter /%,$1),,$(if $(filter :%,$(subst $(CHAR3), :,$(subst :, :,$1))),,1)))
-DOTDOT = $(if $(call IS_RELATIVE,$1),../$1,$1)
-
+include $(MODULE_XCOMMON_DIR)/build/Makefile.file_handling
 
 # Define some generic OS functions
 ifeq ($(OS),WINDOWS)
@@ -82,8 +61,6 @@ MODULE_XCOMMON_DIR = $(subst /build/../build/..,,$(patsubst %/Makefile.common1,%
 
 XCOMMON_DIR = $(MODULE_XCOMMON_DIR)/..
 
-SP0 =
-SP = $(SP0) $(SP0)
 
 FIXDEP = $(patsubst %.xc.d,%.d,$(patsubst %.c.d,%.d,$(patsubst %.cpp.d,%.d,$(patsubst %.s.d,%.d,$1))))
 
@@ -114,7 +91,7 @@ NULL=/dev/null
 CAT=cat
 TO_OS=$(1)
 AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj)
-CHANGEDEP = sed -e 's/\(\/[^ .\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
+CHANGEDEP = sed -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 endif
 
 .SUFFIXES:
@@ -187,7 +164,7 @@ else
 MY_SRCDIR = $(BASE_DIR)
 endif
 ifeq ($(BUILDING_LIBRARY),)
-UM := $(USED_MODULES)
+UM := $(call HANDLE_QUOTES, $(USED_MODULES))
 else
 UM :=
 endif
@@ -343,7 +320,7 @@ MODULE_XCC_XC_FLAGS :=
 MODULE_XCC_ASM_FLAGS :=
 EXPORT_SOURCE_DIRS :=
 DEPENDENT_MODULES :=
-$$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$$(CURRENT_MODULE)'))
+$$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$$(call UNMANGLE_NO_ESCAPE, $$(CURRENT_MODULE))'))
 VERSION :=
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/VERSION
 REPO := $$(notdir $$(abspath $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/..))
@@ -628,16 +605,16 @@ endif
 
 .PHONY: report_modules
 report_modules:
-	@echo Using modules: $(UM)
+	@echo Using modules: $(call QUOTE_IF_NEEDED,$(UM))
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
-	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
+	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o "$(call TO_OS,$(call DOTDOT,$@))"
 else
 $(BIN_DIR)/%.xe :  $(OBJ_FILES) $(XN_SOURCE_FILES)  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	@echo Creating $(notdir $@)
-	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o $(call TO_OS,$(call DOTDOT,$@))
+	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(call DOTDOT,$x))) -o "$(call TO_OS,$(call DOTDOT,$@))"
 endif
 
 ifeq ($(VERBOSE),1)

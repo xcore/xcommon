@@ -3,11 +3,22 @@ export
 # Overide windows shell in case cygwin is present
 SHELL := $(if $(findstring Windows, $(OS))$(findstring WINDOWS,$(OS)),$(windir)\system32\cmd.exe,$(SHELL))
 
+MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
+MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
+
+XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %Makefile.common,$(MAKEFILE_LIST2)))
+
+MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
+
+include $(MODULE_XCOMMON_DIR)/build/Makefile.file_handling
+
+
 BASE_DIR ?= .
 ifeq ($(strip $(APP_NAME)),) 
-APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
+APP_NAME := $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
 endif
-APP_NAME ?= $(subst .,_,$(notdir $(lastword $(abspath .))))
+APP_NAME ?= $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
+
 ifeq ($(BUILDING_LIBRARY),)
 CONFIG ?= Default
 else
@@ -22,13 +33,6 @@ FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 
 BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 
-MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
-MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
-
-XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %Makefile.common,$(MAKEFILE_LIST2)))
-
-
-MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
 .PHONY: $(BIN_DIR)/$(APP_NAME).xe
 .PHONY: clean_common
