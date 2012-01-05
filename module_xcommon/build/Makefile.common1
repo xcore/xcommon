@@ -578,7 +578,7 @@ ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
 
-ifeq ($(wildcard $(AUTO_PROJ)),)
+ifeq ($(call WILDCARD,$(call MANGLE,$(AUTO_PROJ))),)
 eclipse_config:
 	@echo "Warning: Cannot updating eclipse config (no auto_proj tool)"
 else
