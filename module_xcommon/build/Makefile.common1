@@ -131,6 +131,10 @@ CANDIDATE_MODULES_FOR_PATH = $(foreach x,$(call WILDCARD,$(1)/*),$(call KEEP_IF_
 
 CANDIDATE_MODULES = $(foreach x,$(XMOS_MODULE_PATH),$(call CANDIDATE_MODULES_FOR_PATH,$x))
 
+CANDIDATE_MODULES := $(foreach x,$(CANDIDATE_MODULES),$(call MANGLE,$(abspath $x)))
+CANDIDATE_MODULES := $(sort $(CANDIDATE_MODULES))
+
+
 NON_EXPLORED_DIRS ?=
 NON_EXPLORED_DIRS += %archive %.git %CVS %.svn
 
@@ -314,6 +318,7 @@ $$(error Multiple copies of $$(CURRENT_MODULE) found: $$(CURRENT_MODULE_DIR))
 endif
 endif
 
+
 MODULE_XCC_FLAGS :=
 MODULE_XCC_C_FLAGS :=
 MODULE_XCC_XC_FLAGS :=
@@ -456,6 +461,7 @@ HEADER_STATUS_FILES = $(HEADER_DEP_FILES:%.dh=%.hstat)
 
 QUOTED_INCLUDE_DIRS = $(foreach x, $(FULL_INCLUDE_DIRS),"$(call DOTDOT,$x)")
 INCLUDE_FLAGS = $(foreach x,$(QUOTED_INCLUDE_DIRS),-I$(call UNMANGLE_NO_ESCAPE,$x))
+
 
 WORKSPACE_RELATIVE_INCLUDE_DIRS = \
   $(foreach x,$(EXTERNAL_INCLUDE_DIRS),\
