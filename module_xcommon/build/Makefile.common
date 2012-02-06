@@ -77,8 +77,12 @@ ifeq ($(CONFIG),All)
 all: $(foreach config,$(ALL_CONFIGS),$(config).all)
 	@echo Built all configurations
 else
-all: $(BIN_DIR)/$(APP_NAME).xe
+all: $(PREBUILD_TARGET) $(BIN_DIR)/$(APP_NAME).xe
 	@echo Build Complete
+	@echo $(POSTBUILD_TARGET)
+	$(if $(POSTBUILD_TARGET),@make --no-print-directory $(POSTBUILD_TARGET))
+	$(if $(POSTBUILD_TARGET),@echo Post-build complete)
+
 endif
 endif
 endif
