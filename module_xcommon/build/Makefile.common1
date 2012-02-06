@@ -91,7 +91,7 @@ NULL=/dev/null
 CAT=cat
 TO_OS=$(1)
 AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj)
-CHANGEDEP = sed -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g"  -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
+CHANGEDEP = sed -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g'   -e "s/ \.\.\// \.\//g" -e "s/$(subst /,\/,$(abspath ../..)/)/..\/..\//g"  -e "s/.*:/$(subst /,\/,$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))):/g" "$(TARGET_DIR)/$(call FIXDEP,$(call UNMANGLE_NO_ESCAPE,$(notdir $1)))" > $1;$(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 endif
 
 .SUFFIXES:
