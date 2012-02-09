@@ -400,11 +400,15 @@ TBD0 = $(patsubst ./%,td/%,$(patsubst ./../%,td/%,$(patsubst ./../../%,td/%,$1))
 
 TBD1 = $(if $(filter td%,$(call TBD0,$1)),$(call TBD0,$1),td/$1)
 
-TO_BUILD_DIR0 = $(patsubst td/%,$(TARGET_DIR)/%,$(call TBD1,$1))
+TO_BUILD_DIR0 = $(patsubst td/%,/%,$(call TBD1,$1))
 
-TO_BUILD_DIR1 = $(if $(call IS_RELATIVE,$1),$(call TO_BUILD_DIR0,$1),$(TARGET_DIR)$1)
+TO_BUILD_DIR1 = $(if $(call IS_RELATIVE,$1),$(call TO_BUILD_DIR0,$1),$1)
 
-TO_BUILD_DIR = $(call TO_BUILD_DIR1,$(strip $1))
+SHORTEN = $(if $(filter /module_%,$(subst /module_, /module_,$1)),$(subst module_,m_,$(subst $(SP),,$(filter /module_%,$(subst /module_, /module_,$1)))),$1)
+
+TO_BUILD_DIR2 = $(TARGET_DIR)$(call SHORTEN,$(call TO_BUILD_DIR1,$1))
+
+TO_BUILD_DIR = $(call TO_BUILD_DIR2,$(strip $1))
 
 EXCLUDE_PATTERN = $(foreach x, $(EXCLUDE_FILES), %$x)
 EXCLUDE_PATTERN += $(foreach x, $(OTHER_CONFIGS), $(foreach y,$(INCLUDE_ONLY_IN_$x),%$y))
