@@ -3,12 +3,12 @@ export
 # Overide windows shell in case cygwin is present
 SHELL := $(if $(findstring Windows, $(OS))$(findstring WINDOWS,$(OS)),$(windir)\system32\cmd.exe,$(SHELL))
 
-MAKEFILE_LIST1 = $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
-MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
+MAKEFILE_LIST1 := $(foreach x, $(MAKEFILE_LIST), $(if $(wildcard $x),$x,"""$x"""))
+MAKEFILE_LIST2 := $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
 
-XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %Makefile.common,$(MAKEFILE_LIST2)))
+XCOMMON_MAKEFILE := $(subst &&&,\ ,$(filter %Makefile.common,$(MAKEFILE_LIST2)))
 
-MODULE_XCOMMON_DIR = $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
+MODULE_XCOMMON_DIR := $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
 include $(MODULE_XCOMMON_DIR)/build/Makefile.file_handling
 
