@@ -28,6 +28,14 @@
 #
 ##########################################
 
+ifeq ($(EXTRA_INCLUDE),)
+else
+ifneq ($(LIBRARY),)
+GEN_DIR=.build_$(LIBRARY)/generated
+endif
+-include $(EXTRA_INCLUDE)
+endif
+
 BASE_DIR ?= .
 VERBOSE ?= 0
 AUTO_ECLIPSE ?= 1
@@ -97,6 +105,10 @@ CHANGEDEP = sed -e 's/\(\/[^.\\]*\) /\1\\ /g' -e 's/\(\/[^.\\]*\) /\1\\ /g' -e '
 endif
 
 .SUFFIXES:
+
+# Jython
+# This is a bit of a hack since the jython interpreter is contained in the xta
+JYTHON = echo "source $1">$(TARGET_DIR)/tmp.xta;echo "exit" >> $(TARGET_DIR)/tmp.xta;xta source $(TARGET_DIR)/tmp.xta
 
 # General utility function
 
@@ -273,6 +285,21 @@ FAKE_INC_DIR = $(TARGET_DIR)/fake_inc
 BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 LIB_DIR=$(BASE_DIR)/lib/$(ARCH)
 
+ALL_GENERATED_FILES =
+GEN_DIRS =
+
+ifeq ($(wildcard app_build_info),)
+else
+GEN_DIR := $(TARGET_DIR)/generated
+-include app_build_info
+endif
+
+ifeq ($(GENERATED_FILES),)
+else
+ALL_GENERATED_FILES := $(ALL_GENERATED_FILES) $(foreach x,$(GENERATED_FILES),$(GEN_DIR)/$x)
+GEN_FILES_MODULE_DIRS := $(GEN_FILES_MODULE_DIRS) $(foreach x,$(GENERATED_FILES),$(GEN_DIR)/$x*****.)
+GEN_DIRS := $(GEN_DIRS) $(GEN_DIR)
+endif
 
 
 
@@ -303,6 +330,7 @@ ALL_CONFIGS = $(sort Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABL
 
 OTHER_CONFIGS = $(filter-out $(CONFIG),$(ALL_CONFIGS))
 
+
 define INCLUDE_MODULE
 LIBRARY :=
 LIBRARIES :=
@@ -329,6 +357,8 @@ EXPORT_SOURCE_DIRS :=
 DEPENDENT_MODULES :=
 $$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$$(call UNMANGLE_NO_ESCAPE, $$(CURRENT_MODULE))'))
 VERSION :=
+GEN_DIR := $$(TARGET_DIR)/generated/$$(CURRENT_MODULE)
+GENERATED_FILES :=
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/VERSION
 REPO := $$(notdir $$(abspath $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/..))
 REPO := $$(if $$(filter $$(REPO),$$(ECLIPSE_PROJECTS)),,$$(REPO))
@@ -339,10 +369,12 @@ REPO_PATHS := $$(filter-out $$(REPO_PATH),$$(REPO_PATHS)) $$(REPO_PATH)
 
 ECLIPSE_PROJECTS += $$(REPO)
 
+
 REQUIRED_VERSION := $$(call GET_MODULE_VERSION,$1)
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(VERSION)),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but there is no VERSION file for that module)))
 $$(if $$(REQUIRED_VERSION), $$(if $$(strip $$(filter $$(REQUIRED_VERSION),$$(VERSION))),,$$(error Required version for $$(CURRENT_MODULE) is $$(REQUIRED_VERSION) but actual version is $$(VERSION))),)
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR)/module_build_info)
+
 LIBRARY := $$(if $$(LIBRARIES),$$(call GET_LIBRARY,$$(LIBRARIES)),$$(LIBRARY))
 EXCLUDE_LIBS := $$(EXCLUDE_LIBS) $$(filter-out $$(LIBRARY),$$(LIBRARIES))
 LIBRARY := $$(if $$(filter 1,$$(EXPORTED)),,$$(LIBRARY))
@@ -356,6 +388,16 @@ MODULE_INCLUDE_DIRS := $$(foreach x,$$(INCLUDE_DIRS), $$(call EXPAND_DIR,$$(CURR
 MODULE_INCLUDE_DIRS := $$(if $$(LIBRARY), $$(filter $$(MODULE_EXPORT_DIRS), $$(MODULE_INCLUDE_DIRS)), $$(MODULE_INCLUDE_DIRS))
 
 PREBUILD_MAKEFILES := $$(if $$(LIBRARY), $$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/Makefile), $$(CURRENT_MODULE_DIR)/Makefile,),) $$(PREBUILD_MAKEFILES)
+
+
+
+ifeq ($$(GENERATED_FILES),)
+else
+ALL_GENERATED_FILES += $$(foreach x,$$(GENERATED_FILES),$$(GEN_DIR)/$$x)
+GEN_DIRS += $$(GEN_DIR)
+GEN_FILES_MODULE_DIRS := $$(GEN_FILES_MODULE_DIRS) $$(foreach x,$$(GENERATED_FILES),$$(GEN_DIR)/$$(x)*****$$(strip $$(CURRENT_MODULE_DIR)))
+endif
+
 
 FULL_SOURCE_DIRS := $(FULL_SOURCE_DIRS) $$(MODULE_SOURCE_DIRS)
 FULL_INCLUDE_DIRS := $(FULL_INCLUDE_DIRS) $$(MODULE_INCLUDE_DIRS)
@@ -415,24 +457,30 @@ EXCLUDE_PATTERN += $(foreach x, $(OTHER_CONFIGS), $(foreach y,$(INCLUDE_ONLY_IN_
 
 C_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.c))
 C_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(C_SOURCE_FILES))
+C_SOURCE_FILES += $(filter %.c, $(ALL_GENERATED_FILES))
 
 C_OBJ_FILES = $(patsubst %.c, %.c.o, $(C_SOURCE_FILES))
 C_DEP_FILES = $(foreach x,$(C_SOURCE_FILES:.c=.c.d),$(call TO_BUILD_DIR, $x))
 
 CPP_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.cpp))
 CPP_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(CPP_SOURCE_FILES))
+CPP_SOURCE_FILES += $(filter %.cpp, $(ALL_GENERATED_FILES))
 
 CPP_OBJ_FILES = $(patsubst %.cpp, %.cpp.o, $(CPP_SOURCE_FILES))
 CPP_DEP_FILES = $(foreach x,$(CPP_SOURCE_FILES:.cpp=.cpp.d),$(call TO_BUILD_DIR, $x))
 
 XC_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.xc))
 XC_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(XC_SOURCE_FILES))
+XC_SOURCE_FILES += $(filter %.xc, $(ALL_GENERATED_FILES))
 
 XC_OBJ_FILES = $(patsubst %.xc, %.xc.o, $(XC_SOURCE_FILES))
 XC_DEP_FILES = $(foreach x,$(XC_SOURCE_FILES:.xc=.xc.d),$(call TO_BUILD_DIR, $x))
 
 ASM_SOURCE_FILES := $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.s)) $(foreach x, $(FULL_SOURCE_DIRS), $(call WILDCARD,$x/*.S))
 ASM_SOURCE_FILES := $(filter-out $(EXCLUDE_PATTERN), $(ASM_SOURCE_FILES))
+ASM_SOURCE_FILES += $(filter %.S, $(ALL_GENERATED_FILES)) $(filter %.s, $(ALL_GENERATED_FILES))
+
+
 ASM_OBJ_FILES = $(patsubst %.S, %.s.o, $(patsubst %.s, %.o, $(ASM_SOURCE_FILES)))
 ASM_DEP_FILES = $(foreach x,$(ASM_SOURCE_FILES:.S=.s.d),$(call TO_BUILD_DIR, $x))
 
@@ -455,9 +503,11 @@ DEP_FILES_0 = $(CPP_DEP_FILES) $(C_DEP_FILES) $(XC_DEP_FILES) $(ASM_DEP_FILES)
 DEP_FILES = $(patsubst %.d, %.0.d, $(DEP_FILES_0))
 
 FULL_INCLUDE_DIRS := $(filter-out $(EXCLUDE_PATTERN), $(FULL_INCLUDE_DIRS))
+FULL_INCLUDE_DIRS := $(FULL_INCLUDE_DIRS) $(GEN_DIRS)
 
 HEADER_FILES = $(filter-out $(EXCLUDE_FILES),$(foreach x, $(FULL_INCLUDE_DIRS), $(call WILDCARD,$x/*.h)))
 
+GEN_HEADER_FILES = $(filter %.h,$(ALL_GENERATED_FILES))
 
 NOTDIR_HEADER_FILES = $(foreach x,$(HEADER_FILES),$(notdir $x))
 
@@ -524,6 +574,18 @@ $(LIB_DIR)/:
 $(BASE_DIR)/bin/:
 	@-$(call MKDIR,$(BASE_DIR)/bin) > $(NULL)
 
+$(GEN_DIRS):
+	@-$(call MKDIR,$@) > $(NULL)
+
+$(ALL_GENERATED_FILES) : | $(GEN_DIRS)
+
+define GEN_DIR_DEF
+$1 : GEN_DIR = $(patsubst %/,%,$(dir $1))
+$1 : CURRENT_MODULE_DIR = $(strip $(subst $1*****,,$(filter $1*****%,$(GEN_FILES_MODULE_DIRS))))
+endef
+
+$(foreach x,$(ALL_GENERATED_FILES),$(eval $(call GEN_DIR_DEF,$x)))
+
 # Make rules for source
 
 
@@ -573,7 +635,7 @@ ifneq ($(VERBOSE),1)
 endif
 
 %.h: | $(FAKE_INC_DIR)
-	@echo WARNING: Include file $@ missing
+	$(if $(filter $@,$(GEN_HEADER_FILES)),,@echo WARNING: Include file $@ missing)
 	@echo "Missing include file" > $(FAKE_INC_DIR)/$(notdir $@)
 
 define OBJ_RULE
@@ -621,10 +683,10 @@ report_modules:
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/$(APP_NAME).xe :  $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
+$(BIN_DIR)/$(APP_NAME).xe : $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(LIB_FILES) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 else
-$(BIN_DIR)/$(APP_NAME).xe :  $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(LIB_FILES) |  $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
+$(BIN_DIR)/$(APP_NAME).xe : $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(LIB_FILES) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 endif
@@ -655,7 +717,7 @@ $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 endif
 
 define DEP_RULE
-$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) | $(TARGET_DIR)/
+$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(GEN_HEADER_FILES) | $(TARGET_DIR)/
 	@echo Creating dependencies for $(call UNMANGLE, $(notdir $1))
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$$(call DOTDOT,$$<)" > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
@@ -749,7 +811,10 @@ endif
 
 .PHONY: do_export
 
-do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib).a) $(foreach x, $(EXPORT_SOURCE_DIRS), $x.export) $(EXPORT_DIR)/module_build_info
+%.generated_export:
+	@$(call XCP,$(TARGET_DIR)/generated/$* $(EXPORT_DIR)/$(GENERATED_HEADER_EXPORT_DIR)/$*)
+
+do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib).a) $(foreach x, $(EXPORT_SOURCE_DIRS), $x.export) $(EXPORT_DIR)/module_build_info $(if $(GENERATED_HEADER_EXPORT_DIR),$(foreach x,$(filter %.h,$(GENERATED_FILES)),$x.generated_export))
 	@echo Export complete
 
 .PHONY: export
