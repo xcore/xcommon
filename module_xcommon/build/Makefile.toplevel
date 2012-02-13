@@ -18,14 +18,20 @@ BUILD_SUBDIRS := $(if $(filter all,$(BUILD_SUBDIRS)),$(wildcard app_*),$(BUILD_S
 
 BUILD_SUBDIRS := $(call HANDLE_QUOTES, $(BUILD_SUBDIRS))
 
+ifeq ($(NO_IGNORE_ERRORS),1)
+IGNORE_ERR=
+else
+IGNORE_ERR=-
+endif
+
 %.all:
-	-cd $(call UNMANGLE,$*) && xmake all
+	$(IGNORE_ERR)cd $(call UNMANGLE,$*) && xmake all
 
 %.clean:
-	-cd $(call UNMANGLE,$*) && xmake clean
+	$(IGNORE_ERR)cd $(call UNMANGLE,$*) && xmake clean
 
 %.test:
-	-cd $(call UNMANGLE,$*) && xmake test
+	$(IGNORE_ERR)cd $(call UNMANGLE,$*) && xmake test
 
 all: $(foreach x, $(BUILD_SUBDIRS), $x.all) 
 plugins: $(foreach x, $(PLUGIN_SUBDIRS), $x.all) 
