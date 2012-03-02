@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
   bool loadOkay = project.LoadFile();
 
   if (!loadOkay) {
-    std::cerr << "Cannot load XML file `" << argv[0] << "'" << std::endl;
+    std::cerr << "Cannot load XML file `" << argv[1] << "'" << std::endl;
     std::cerr << project.ErrorDesc() << std::endl;
     exit(1);
   }
