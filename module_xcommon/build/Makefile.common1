@@ -127,13 +127,13 @@ MAKEFILE_COMMON_DIR = $(patsubst %/build/Makefile.common,%,$(MAKEFILE_COMMON))
 
 PARENT_DIRNAME = $(notdir $(abspath ..))
 
-TWO_LEVEL = $(if $(filter sc_% sw_% ap_% tool_%,$(PARENT_DIRNAME))$(wildcard ../.xproject),1,)
+IS_REPO = $(filter sc_% sw_% ap_% tool_%,$(notdir $(abspath $(1))))$(wildcard $1/.xproject)$(wildcard $1/xpd.xml)
+
+TWO_LEVEL = $(if $(call IS_REPO,..),1,)
 
 ifeq ($(TWO_LEVEL),)
 SEARCH_DIR := $(BASE_DIR)/..
 endif
-
-
 
 
 XMOS_MODULE_PATH := $(subst \ , ,$(XMOS_MODULE_PATH))
@@ -521,12 +521,17 @@ QUOTED_INCLUDE_DIRS = $(foreach x, $(FULL_INCLUDE_DIRS),"$(call DOTDOT,$x)")
 INCLUDE_FLAGS = $(foreach x,$(QUOTED_INCLUDE_DIRS),-I$(call UNMANGLE_NO_ESCAPE,$x))
 
 
+ACTUAL_REPO_PATHS = $(foreach x,$(REPO_PATHS),$(if $(call IS_REPO,$x),$x,))
+CONTAINING_REPO_PATHS = $(foreach x,$(REPO_PATHS),$(if $(call IS_REPO,$x),,$x))
+
+WORKSPACE_RELATIVE_ACTUAL = $(strip $(foreach p,$(ACTUAL_REPO_PATHS),$(patsubst $p/%,$(notdir $p)/%,$(filter $p%,$1))))
+
+WORKSPACE_RELATIVE_CONTAINED = $(strip $(foreach p,$(CONTAINING_REPO_PATHS),$(patsubst $p/%,%,$1)))
+
+WORKSPACE_RELATIVE = $(if $(call WORKSPACE_RELATIVE_ACTUAL,$1),$(call WORKSPACE_RELATIVE_ACTUAL,$1),$(call WORKSPACE_RELATIVE_CONTAINED,$1))
+
 WORKSPACE_RELATIVE_INCLUDE_DIRS = \
-  $(foreach x,$(EXTERNAL_INCLUDE_DIRS),\
-      $(foreach p,$(REPO_PATHS),$(patsubst $p/%,$(notdir $p)/%,$(filter $p%,$x))))
-
-
-
+  $(foreach x,$(EXTERNAL_INCLUDE_DIRS),$(call WORKSPACE_RELATIVE,$x))
 
 OPTIONAL_HEADER_FLAG=$(if $(filter $1,$(NOTDIR_HEADER_FILES)),-D__$(strip $(subst .,_,$1))_exists__=1,)
 
@@ -661,20 +666,21 @@ else
 ifeq ($(WINFLAG),0)
 eclipse_config:
 	@echo "Updating eclipse config"
-	@"$(AUTO_PROJ)" ../.cproject $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
-	@cp .tmpproject  ../.cproject
+	@"$(AUTO_PROJ)" $(ECLIPSE_CONFIG_FILE) $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
+	@cp .tmpproject  $(ECLIPSE_CONFIG_FILE)
 	@$(call RM,.tmpproject)
 else
 eclipse_config:
 	@echo "Updating eclipse config"
-	@"$(AUTO_PROJ)" ..\.cproject $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
-	@cmd /c more .tmpproject > ..\.cproject
+	@"$(AUTO_PROJ)" $(call TO_OS,$(ECLIPSE_CONFIG_FILE)) $(WORKSPACE_RELATIVE_INCLUDE_DIRS) > .tmpproject
+	@cmd /c more .tmpproject > $(call TO_OS,$(ECLIPSE_CONFIG_FILE))
 	@$(call RM,.tmpproject)
 endif
 endif
 
 ifeq ($(AUTO_ECLIPSE),1)
-ECLIPSE_CONFIG=$(if $(wildcard ../.cproject),eclipse_config,)
+ECLIPSE_CONFIG_FILE = $(if $(TWO_LEVEL),../.cproject,./.cproject)
+ECLIPSE_CONFIG=$(if $(wildcard $(ECLIPSE_CONFIG_FILE)),eclipse_config,)
 else
 ECLIPSE_CONFIG=
 endif
