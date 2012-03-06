@@ -8,6 +8,8 @@ MAKEFILE_LIST2 := $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
 
 XCOMMON_MAKEFILE := $(subst &&&,\ ,$(filter %Makefile.common,$(MAKEFILE_LIST2)))
 
+CURRENT_MAKEFILE := $(filter-out $(XCOMMON_MAKEFILE),$(MAKEFILE_LIST2))
+
 MODULE_XCOMMON_DIR := $(patsubst %/Makefile.common,%,$(XCOMMON_MAKEFILE))/..
 
 include $(MODULE_XCOMMON_DIR)/build/Makefile.file_handling
@@ -71,7 +73,7 @@ ifeq ($(CONFIG),All)
 
 %.all:
 	@echo Building configuration $(CONFIG0)
-	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
+	@xmake -f $(CURRENT_MAKEFILE) BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
 
 
 all: $(foreach config,$(ALL_CONFIGS),$(config).all)
