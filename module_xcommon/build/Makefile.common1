@@ -127,7 +127,7 @@ MAKEFILE_COMMON_DIR = $(patsubst %/build/Makefile.common,%,$(MAKEFILE_COMMON))
 
 PARENT_DIRNAME = $(notdir $(abspath ..))
 
-IS_REPO = $(filter sc_% sw_% ap_% tool_%,$(notdir $(abspath $(1))))$(wildcard $1/.xproject)$(wildcard $1/xpd.xml)
+IS_REPO = $(filter sc_% sw_% ap_% tool_%,$(notdir $(abspath $(1))))$(wildcard $1/.cproject)$(wildcard $1/xpd.xml)$(wildcard $1/.git)
 
 TWO_LEVEL = $(if $(call IS_REPO,..),1,)
 
@@ -303,7 +303,10 @@ GEN_FILES_MODULE_DIRS := $(GEN_FILES_MODULE_DIRS) $(foreach x,$(GENERATED_FILES)
 GEN_DIRS := $(GEN_DIRS) $(GEN_DIR)
 endif
 
+ALL_CONFIGS = $(sort Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABLES)),$(if $(findstring .,$x),,$(subst XCC_FLAGS_,,$x)))) $(strip $(foreach x,$(filter INCLUDE_ONLY_IN_%,$(.VARIABLES)),$(subst INCLUDE_ONLY_IN_,,$x))))
 
+OTHER_CONFIGS = $(filter-out $(CONFIG),$(ALL_CONFIGS))
+EXCLUDE_DIRS = $(foreach x, $(OTHER_CONFIGS), $(foreach y,$(INCLUDE_ONLY_IN_$x),$y))
 
 FULL_INCLUDE_DIRS := $(foreach x, $(INCLUDE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
 FULL_SOURCE_DIRS := $(foreach x, $(SOURCE_DIRS), $(call EXPAND_DIR,$(call SRCDIR,$x)))
@@ -314,7 +317,9 @@ EXCLUDE_SOURCE_DIRS := $(foreach x, $(EXPORT_SOURCE_DIRS), $(call EXPAND_DIR,$(c
 SAME_DIR = $(if $(filter $(abspath $(call UNMANGLE,$1)),$(abspath $(call UNMANGLE,$2))),1,)
 
 FULL_SOURCE_DIRS := $(filter-out $(EXCLUDE_SOURCE_DIRS),$(FULL_SOURCE_DIRS))
+FULL_SOURCE_DIRS := $(filter-out $(EXCLUDE_DIRS),$(FULL_SOURCE_DIRS))
 
+FULL_INCLUDE_DIRS := $(filter-out $(EXCLUDE_DIRS),$(FULL_INCLUDE_DIRS))
 
 $(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notdir $x)), $(eval XCC_FLAGS_$(patsubst ./%,%,$x) := $(XCC_FLAGS_$(notdir $x))),))
 
@@ -327,10 +332,6 @@ ECLIPSE_PROJECTS :=
 EXTERNAL_INCLUDE_DIRS :=
 REPO_PATHS :=
 
-
-ALL_CONFIGS = $(sort Default $(strip $(foreach x,$(filter XCC_FLAGS_%,$(.VARIABLES)),$(if $(findstring .,$x),,$(subst XCC_FLAGS_,,$x)))) $(strip $(foreach x,$(filter INCLUDE_ONLY_IN_%,$(.VARIABLES)),$(subst INCLUDE_ONLY_IN_,,$x))))
-
-OTHER_CONFIGS = $(filter-out $(CONFIG),$(ALL_CONFIGS))
 
 
 define INCLUDE_MODULE
