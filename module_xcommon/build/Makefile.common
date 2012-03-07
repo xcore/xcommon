@@ -42,6 +42,8 @@ else
 VALID_CONFIG := 0
 endif
 
+default_target: all
+	@echo "Done"
 
 .PHONY: $(BIN_DIR)/$(APP_NAME).xe
 .PHONY: clean_common
