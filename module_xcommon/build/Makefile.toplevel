@@ -38,3 +38,7 @@ plugins: $(foreach x, $(PLUGIN_SUBDIRS), $x.all)
 clean: $(foreach x, $(BUILD_SUBDIRS), $x.clean)
 clean_plugins: $(foreach x, $(PLUGIN_SUBDIRS), $x.clean) 
 test: $(foreach x, $(TEST_SUBDIRS), $x.test)
+
+include $(MODULE_XCOMMON_DIR)/build/Makefile.eclipse_projects
+
+
