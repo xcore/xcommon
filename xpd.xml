@@ -15,6 +15,7 @@
     <location>ssh://git@github.com/xcore/xcommon</location>
     <name>xcommon</name>
     <maintainer>davelxmos</maintainer>
+    <release parenthash = "158e7bfff414742da99b3981c9b67358e77b74af" version = "1.0.0rc0"></release>
     <vendor>XMOS</vendor>
     <xpd_version>1.0</xpd_version>
 </xpd>
