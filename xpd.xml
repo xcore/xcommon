@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<xpd>
+    <description>XMOS Common Build Infrastructure</description>
+    <exclude_dir>app_empty</exclude_dir>
+    <exclude_dir>app_test_build</exclude_dir>
+    <exclude_dir>app_test_generated</exclude_dir>
+    <exclude_dir>app test spacey</exclude_dir>
+    <exclude_dir>module_test_build</exclude_dir>
+    <exclude_dir>module_test_build_2</exclude_dir>
+    <exclude_dir>module_test_generated</exclude_dir>
+    <exclude_dir>module_test_generated2</exclude_dir>
+    <exclude_dir>module test spacey</exclude_dir>
+    <exclude_dir>module test spacey 2</exclude_dir>
+    <exclude_dir>auto_proj</exclude_dir>
+    <location>ssh://git@github.com/xcore/xcommon</location>
+    <name>xcommon</name>
+    <maintainer>davelxmos</maintainer>
+    <vendor>XMOS</vendor>
+    <xpd_version>1.0</xpd_version>
+</xpd>
