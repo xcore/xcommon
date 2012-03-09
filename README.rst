@@ -1,10 +1,9 @@
 XCommon: common build infrastructure
 .................................
 
-:Latest release: 1.0.0rc0
+:Latest release: 1.0.0rc1
 :Maintainer: davelxmos
 :Description: XMOS Common Build Infrastructure
-
 
 
 :Maintainer:  Dave Lacey (github: davelxmos)
