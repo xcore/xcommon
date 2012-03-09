@@ -21,6 +21,9 @@ APP_NAME := $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
 endif
 APP_NAME ?= $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
 
+CONFIG_EXT = $(if $(CONFIG),$(if $(filter Default Release,$(CONFIG)),,_$(CONFIG)),)
+
+APP_NAME := $(APP_NAME)$(CONFIG_EXT)
 
 BIN_DIR=$(BASE_DIR)/bin/$(if $(filter Default,$(CONFIG)),,$(CONFIG))
 
