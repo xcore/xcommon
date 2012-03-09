@@ -344,8 +344,8 @@ CURRENT_MODULE := $$(strip $$(call GET_MODULE_NAME,$1))
 CURRENT_MODULE_DIR := $$(if $$(call SEARCH_FOR_MODULE,$$(CURRENT_MODULE)), $$(call SEARCH_FOR_MODULE,$$(CURRENT_MODULE)), not_found)
 ifeq ($$(words $$(CURRENT_MODULE_DIR)),1)
 else
-ifeq ($$(words $$(filter ./../../$$(CURRENT_REPO)%,$$(CURRENT_MODULE_DIR))),1)
-CURRENT_MODULE_DIR := $$(filter ./../../$$(CURRENT_REPO)%,$$(CURRENT_MODULE_DIR))
+ifeq ($$(words $$(filter %/$$(CURRENT_REPO)/$$(CURRENT_MODULE),$$(CURRENT_MODULE_DIR))),1)
+CURRENT_MODULE_DIR := $$(filter %/$$(CURRENT_REPO)/$$(CURRENT_MODULE),$$(CURRENT_MODULE_DIR))
 else
 $$(error Multiple copies of $$(CURRENT_MODULE) found: $$(CURRENT_MODULE_DIR))
 endif
