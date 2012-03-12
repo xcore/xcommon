@@ -1,7 +1,7 @@
 XCommon: common build infrastructure
 .................................
 
-:Latest release: 1.0.0rc1
+:Latest release: 1.0.0rc2
 :Maintainer: davelxmos
 :Description: XMOS Common Build Infrastructure
 

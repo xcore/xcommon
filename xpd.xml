@@ -16,7 +16,8 @@
     <name>xcommon</name>
     <maintainer>davelxmos</maintainer>
     <release parenthash = "158e7bfff414742da99b3981c9b67358e77b74af" version = "1.0.0rc0" githash = "481c97c828da336bc5ef89e3d9f37f7ee758e0e4"></release>
-    <release parenthash = "00a70087b165dfee96a5c3bf192bee515fa7ef97" version = "1.0.0rc1"></release>
+    <release parenthash = "00a70087b165dfee96a5c3bf192bee515fa7ef97" version = "1.0.0rc1" githash = "3416f530590333980bbe152a9123b16becdb441f"></release>
+    <release parenthash = "52a4ba169137e1d63799a5f70eaa25d8dd1d71fa" version = "1.0.0rc2"></release>
     <vendor>XMOS</vendor>
     <xpd_version>1.0</xpd_version>
 </xpd>
