@@ -32,8 +32,7 @@ Workspace
 
 Projects
    A *project* is a directory possibly containing several applications and
-   modules plus other files relating to a particular project. These
-   projects appear at the top level in the project explorer in the XDE.
+   modules plus other files relating to a particular project.
    A project may contain the code for a particular board or reference
    design or be a software component containing modules for other
    projects to use.
@@ -42,12 +41,16 @@ Applications
    An *application* is a directory containing source files and a
    Makefile that builds into a single executable (``.xe``) file.
    By convention application directories start with the prefix ``app_``.
+   These applications appear at the top level in the project
+   explorer in the XDE.
 
 Modules
   A *module* is a directory containing source files and/or binary
   libraries. The source does not build to anything by itself but can be
   used by applications.
   by convention module directories start with the prefix ``module_``.
+  These modules appear at the top level in the project
+  explorer in the XDE.
 
 |newpage|
   
@@ -79,6 +82,21 @@ to a separate binary. These applications can use source from the modules
 within the projects and can use modules from their own project 
 (``module_avb1`` and ``module_avb2``) and from other projects 
 (``module_xtcp``, ``module_zeroconf`` and ``module_ethernet``).
+
+Alternatively, a workspace may be structured in the following way::
+
+   app_avb_demo1/
+   app_avb_demo2/
+   module_avb1/
+   module_avb2/
+   doc/
+   module_xtcp/
+   module_zeroconf/
+   module_ethernet/
+
+In this case, all applications and modules are at the top level of the
+workspace.
+
 
 .. _xmos_makefile_manual_app_makefile:
 
