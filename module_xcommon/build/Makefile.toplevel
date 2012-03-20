@@ -9,7 +9,7 @@ MAKEFILE_LIST2 = $(subst """,,$(subst """  """,&&&,$(MAKEFILE_LIST1)))
 
 XCOMMON_MAKEFILE = $(subst &&&,\ ,$(filter %Makefile.toplevel,$(MAKEFILE_LIST2)))
 
-MODULE_XCOMMON_DIR = $(patsubst %/Makefile.toplevel,%,$(XCOMMON_MAKEFILE))/..
+MODULE_XCOMMON_DIR := $(patsubst %/Makefile.toplevel,%,$(XCOMMON_MAKEFILE))/..
 
 include $(MODULE_XCOMMON_DIR)/build/Makefile.file_handling
 
