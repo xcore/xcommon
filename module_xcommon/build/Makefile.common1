@@ -143,7 +143,7 @@ XMOS_MODULE_PATH := $(strip $(XMOS_MODULE_PATH)$(PATHSEP)$(strip $(SEARCH_DIR)))
 
 XMOS_MODULE_PATH := $(subst ;, ,$(call MANGLE,$(subst $(PATHSEP),;,$(XMOS_MODULE_PATH))))
 
-CANDIDATE_MODULES_FOR_PATH = $(foreach x,$(call WILDCARD,$(1)/*),$(call KEEP_IF_DIR,$x)) $(foreach x,$(call WILDCARD,$(1)/*),$(foreach y,$(call WILDCARD,$x/*),$(call KEEP_IF_DIR,$y)))
+CANDIDATE_MODULES_FOR_PATH = $(1) $(foreach x,$(call WILDCARD,$(1)/*),$(call KEEP_IF_DIR,$x)) $(foreach x,$(call WILDCARD,$(1)/*),$(foreach y,$(call WILDCARD,$x/*),$(call KEEP_IF_DIR,$y)))
 
 CANDIDATE_MODULES = $(foreach x,$(XMOS_MODULE_PATH),$(call CANDIDATE_MODULES_FOR_PATH,$x))
 
