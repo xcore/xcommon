@@ -1,3 +1,7 @@
+ifeq ($(_COMMON1),1)
+
+else
+
 export
 
 # Overide windows shell in case cygwin is present
@@ -119,4 +123,6 @@ else
 clean: clean_common
 endif
 endif
+endif
+
 endif

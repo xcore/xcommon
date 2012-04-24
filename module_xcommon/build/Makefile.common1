@@ -27,7 +27,10 @@
 #               files are kept in. . Defaults to $(TARGET).
 #
 ##########################################
-
+_COMMON1:=1
+export _COMMON1
+-include Makefile
+_COMMON1:=0
 ifeq ($(EXTRA_INCLUDE),)
 else
 ifneq ($(LIBRARY),)
@@ -321,7 +324,7 @@ FULL_SOURCE_DIRS := $(filter-out $(EXCLUDE_DIRS),$(FULL_SOURCE_DIRS))
 
 FULL_INCLUDE_DIRS := $(filter-out $(EXCLUDE_DIRS),$(FULL_INCLUDE_DIRS))
 
-$(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notdir $x)), $(eval XCC_FLAGS_$(patsubst ./%,%,$x) := $(XCC_FLAGS_$(notdir $x))),))
+$(foreach x, $(call GET_ALL_FILES, $(FULL_SOURCE_DIRS)), $(if $(XCC_FLAGS_$(notdir $x)), $(eval XCC_FLAGS_$x := $(XCC_FLAGS_$(notdir $x))),))
 
 PREBUILD_MAKEFILES :=
 
