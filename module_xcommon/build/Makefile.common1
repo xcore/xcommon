@@ -233,6 +233,10 @@ ifeq ($(strip $(APP_NAME)),)
 APP_NAME := $(subst .,_,$(notdir $(lastword $(abspath .))))
 endif
 
+ifneq ($(strip $(APP_NAME0)),)
+APP_NAME := $(APP_NAME0)
+endif
+
 ifeq ($(BUILDING_LIBRARY),)
 CONFIG ?= Default
 else
@@ -272,8 +276,8 @@ endif
 ARCH ?= xs1b
 
 ifeq ($(BUILDING_LIBRARY),1)
-BUILD_NAME := $(CONFIG)
-WORKING_DIR := $(if $(filter Default,$(CONFIG)),.build,.build_$(CONFIG))
+BUILD_NAME := $(LIBRARY)
+WORKING_DIR := .build_$(LIBRARY)
 INCLUDE_DIRS := *
 SOURCE_DIRS := *
 LIB_DIRS := *
@@ -692,6 +696,7 @@ endif
 .PHONY: report_modules
 report_modules:
 	@echo Using modules: $(call QUOTE_IF_NEEDED,$(UM))
+
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)

@@ -26,6 +26,8 @@ all: $(foreach lib, $(LIBRARIES), $(lib).all)
 clean: $(foreach lib, $(LIBRARIES), $(lib).clean)
 	@echo Done
 
+ifeq ($(filter export, $(MAKECMDGOALS)),export)
 export: $(foreach lib, $(LIBRARIES), $(lib).all)
 	@xmake LIBRARY=$(firstword $(LIBRARIES)) --no-print-directory -f $(MODULE_XCOMMON_DIR)/build/Makefile.library export
 	@echo Done
+endif
