@@ -521,6 +521,21 @@ GEN_HEADER_FILES = $(filter %.h,$(ALL_GENERATED_FILES))
 
 NOTDIR_HEADER_FILES = $(foreach x,$(HEADER_FILES),$(notdir $x))
 
+define HWARNING_RULE
+.PHONY: $1.header_warning
+$1.header_warning:
+	@echo WARNING: Duplicate header found: $1
+	@echo WARNING: Found in: $(foreach x,$(filter %$1,$(HEADER_FILES)),$(call UNMANGLE,$x))
+endef
+
+IS_DUP_HEADER=$(strip $(filter $(1)$(1),$(subst $(SP),,$(filter $1,$(NOTDIR_HEADER_FILES)))))
+
+DUP_HEADERS = $(foreach x,$(sort $(NOTDIR_HEADER_FILES)),$(if $(call IS_DUP_HEADER,$x),$x,))
+
+HEADER_WARNINGS := $(foreach x,$(DUP_HEADERS),$x.header_warning)
+
+$(foreach x,$(DUP_HEADERS),$(eval $(call HWARNING_RULE,$x)))
+
 HEADER_DEP_FILES := $(foreach x,$(HEADER_FILES:.h=.dh),$(call TO_BUILD_DIR, $x))
 
 HEADER_STATUS_FILES = $(HEADER_DEP_FILES:%.dh=%.hstat)
@@ -700,10 +715,10 @@ report_modules:
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/$(APP_NAME).xe : $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
+$(BIN_DIR)/$(APP_NAME).xe : $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 else
-$(BIN_DIR)/$(APP_NAME).xe : $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
+$(BIN_DIR)/$(APP_NAME).xe : $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	@echo Creating $(notdir $@)
 	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 endif
