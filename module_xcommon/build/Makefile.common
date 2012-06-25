@@ -74,10 +74,16 @@ list_includes:
 #  all : $(BIN_DIR)/my_app.xe
 ifeq ($(OVERRIDE_ALL_TARGET),)
 ifeq ($(VALID_CONFIG),0)
-all:
+
+.PHONY: report_invalid
+report_invalid:
 	@echo Invalid build configuration: $(CONFIG)
 	@echo
 	@echo Valid build configurations are: $(ALL_CONFIGS)
+
+all: report_invalid
+	$(error Invalid configuration)
+
 else
 ifeq ($(CONFIG),All)
 
