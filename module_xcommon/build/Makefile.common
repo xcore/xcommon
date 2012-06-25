@@ -1,3 +1,8 @@
+ifeq ($(filter 3.81,$(MAKE_VERSION)),)
+$(error This makefile requires v3.81 of make (or use xmake instead of make))
+endif
+
+
 ifeq ($(_COMMON1),1)
 
 else
@@ -60,13 +65,13 @@ default_target: all
 .PHONY: clean_common
 
 $(BIN_DIR)/$(APP_NAME).xe:
-	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory $(BIN_DIR)/$(APP_NAME).xe
+	@$(MAKE) -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory $(BIN_DIR)/$(APP_NAME).xe
 
 clean_common:
-	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory clean_common
+	@$(MAKE) -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory clean_common
 
 list_includes:
-	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory list_includes
+	@$(MAKE) -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory list_includes
 
 # The final target of the build. This is usually dependent on a binary file
 # in the $(BIN_DIR) directory e.g.
@@ -92,7 +97,7 @@ ifeq ($(CONFIG),All)
 
 %.all:
 	@echo Building configuration $(CONFIG0)
-	@xmake -f $(CURRENT_MAKEFILE) BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
+	@$(MAKE) -f $(CURRENT_MAKEFILE) BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
 
 
 all: $(foreach config,$(ALL_CONFIGS),$(config).all)
@@ -121,7 +126,7 @@ ifeq ($(CONFIG),All)
 
 %.clean:
 	@echo Cleaning configuration $(CONFIG0)
-	@xmake -f $(MODULE_XCOMMON_DIR)/build/Makefile.common BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory clean
+	@$(MAKE) -f $(MODULE_XCOMMON_DIR)/build/Makefile.common BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory clean
 
 
 clean: $(foreach config,$(ALL_CONFIGS),$(config).clean)

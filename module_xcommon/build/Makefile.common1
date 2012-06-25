@@ -756,11 +756,11 @@ else
 
 %.prebuild: prebuild
 	@echo ***Building $(notdir $(patsubst %/,%,$(dir $*)))***
-	@cd $(dir $*) && xmake --no-print-directory -f $(notdir $*) all
+	@cd $(dir $*) && $(MAKE) --no-print-directory -f $(notdir $*) all
 
 $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 	@echo ***Building main application***
-	@xmake NO_PREBUILD=1 --no-print-directory $(BIN_DIR)/$*.xe
+	@$(MAKE) NO_PREBUILD=1 --no-print-directory $(BIN_DIR)/$*.xe
 endif
 
 define DEP_RULE
@@ -803,7 +803,7 @@ endif
 
 %.prebuild.clean:
 	@echo Cleaning $(abspath $(dir $*))
-	@cd $(dir $*) && xmake --no-print-directory -f $(notdir $*) clean
+	@cd $(dir $*) && $(MAKE) --no-print-directory -f $(notdir $*) clean
 
 
 clean_common: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild.clean)
@@ -868,7 +868,7 @@ do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib
 
 export:
 	@$(call RMRF, export)
-	@xmake -f $(XCOMMON_MAKEFILE) do_export
+	@$(MAKE) -f $(XCOMMON_MAKEFILE) do_export
 
 endif
 
