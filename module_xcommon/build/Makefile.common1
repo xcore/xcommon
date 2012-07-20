@@ -571,7 +571,7 @@ LIB_FILES := $(filter-out $(EXCLUDE_LIB_PATTERN), $(LIB_FILES))
 LIB_DIRS := $(foreach x, $(LIB_FILES), $(dir $x))
 #remove duplicates
 LIB_DIRS := $(sort $(LIB_DIRS))
-LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L "$(strip $(call TO_OS, $(call REMOVE_TRAILING_SLASH,$(call UNMANGLE,$(call DOTDOT,$x)))))") $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
+LIB_FLAGS = $(foreach x,$(LIB_DIRS), -L "$(strip $(call TO_OS, $(call REMOVE_TRAILING_SLASH,$(call UNMANGLE_NO_ESCAPE,$(call DOTDOT,$x)))))") $(foreach x,$(LIB_FILES),-l$(patsubst lib%.a,%,$(notdir $x)))
 define NO_SOURCE
 
 
@@ -755,8 +755,8 @@ else
 
 
 %.prebuild: prebuild
-	@echo ***Building $(notdir $(patsubst %/,%,$(dir $*)))***
-	@cd $(dir $*) && $(MAKE) --no-print-directory -f $(notdir $*) all
+	@echo ***Building $(notdir $(patsubst %/,%,$(call UNMANGLE_NO_ESCAPE,$(dir $*))))***
+	@cd "$(call UNMANGLE_NO_ESCAPE,$(dir $*))" && $(MAKE) --no-print-directory -f $(notdir $*) all
 
 $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 	@echo ***Building main application***
@@ -802,8 +802,8 @@ endif
 # Top level rules
 
 %.prebuild.clean:
-	@echo Cleaning $(abspath $(dir $*))
-	@cd $(dir $*) && $(MAKE) --no-print-directory -f $(notdir $*) clean
+	@echo Cleaning $(abspath $(call UNMANGLE,$(dir $*)))
+	@cd "$(call UNMANGLE_NO_ESCAPE,$(dir $*))" && $(MAKE) --no-print-directory -f $(notdir $*) clean
 
 
 clean_common: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild.clean)
