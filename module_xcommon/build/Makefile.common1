@@ -155,7 +155,7 @@ CANDIDATE_MODULES := $(sort $(CANDIDATE_MODULES))
 
 
 NON_EXPLORED_DIRS ?=
-NON_EXPLORED_DIRS += %archive %.git %CVS %.svn
+NON_EXPLORED_DIRS += %archive %.git %CVS %.svn %export
 
 GET_ALL_SUBDIRS = $1 $(foreach x,$(filter-out $(NON_EXPLORED_DIRS), $(call WILDCARD,$1/*)),$(if $(call IS_DIR, $x), $(call GET_ALL_SUBDIRS, $x),))
 
@@ -866,9 +866,11 @@ do_export: $(EXPORT_DIR) $(foreach lib, $(LIBRARIES), $(EXPORT_LIB_DIR)/lib$(lib
 
 .PHONY: export
 
+ifeq ($(OVERRIDE_EXPORT_TARGET),)
 export:
 	@$(call RMRF, export)
 	@$(MAKE) -f $(XCOMMON_MAKEFILE) do_export
+endif
 
 endif
 

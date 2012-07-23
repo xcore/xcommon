@@ -19,6 +19,7 @@ XCC_ASM_FLAGS := $(LIB_XCC_ASM_FLAGS_$(LIBRARY))
 
 OVERRIDE_ALL_TARGET = 1
 OVERRIDE_CLEAN_TARGET = 1
+OVERRIDE_EXPORT_TARGET = 1
 
 export LIBRARY
 
@@ -34,5 +35,5 @@ clean:
 
 .PHONY: export
 
-export:
-	@xmake EXTRA_INCLUDE=module_build_info -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory export
+export: all
+	@xmake EXTRA_INCLUDE=module_build_info -f $(MODULE_XCOMMON_DIR)/build/Makefile.common1 --no-print-directory do_export
