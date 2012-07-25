@@ -765,7 +765,7 @@ endif
 
 define DEP_RULE
 $(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(GEN_HEADER_FILES) | $(TARGET_DIR)/
-	@echo Creating dependencies for $(call UNMANGLE, $(notdir $1))
+	@echo Creating dependencies for $(call UNMANGLE_NO_ESCAPE,$(notdir $1))
 	@cd $(TARGET_DIR) && $(XCC) -MMD -E $(XCC_FLAGS) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) "$$(call DOTDOT,$$<)" > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
 	@$$(call CHANGEDEP,$$@,$1)
