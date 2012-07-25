@@ -14,7 +14,7 @@ UNMANGLE_DRIVES = $(subst $(CHAR3),:,$(subst /$(CHAR3),,$1))
 MANGLE=$(call MANGLE_DRIVES,$(subst $(SP),$(CHAR2),$1))
 UNMANGLE=$(strip $(call UNMANGLE_DRIVES,$(subst $(CHAR2),$(ESCAPED_SPACE),$1)))
 REMANGLE=$(subst \ ,$(CHAR2),$1)
-UNMANGLE_NO_ESCAPE=$(call UNMANGLE_DRIVES,$(subst $(CHAR2), ,$1))
+UNMANGLE_NO_ESCAPE=$(strip $(call UNMANGLE_DRIVES,$(subst $(CHAR2), ,$1)))
 QUOTE_AROUND = $(foreach x,$2,$(if $(filter $(1)%,$x),$(if $(wildcard $x),$x,$x$(CHAR1)),$(if $(wildcard $x),$x,$(CHAR1)$x$(CHAR1))))
 JOIN_QUOTED = $(call MANGLE_DRIVES,$(subst $(CHAR1),,$(subst $(CHAR1) $(CHAR1),$(CHAR2),$1)))
 
