@@ -723,10 +723,15 @@ else
 ECLIPSE_CONFIG=
 endif
 
+ifeq ($(strip $(UM)),)
+USING_MODULES_MSG = No modules used.
+else
+USING_MODULES_MSG = Using modules: $(strip $(call QUOTE_IF_NEEDED,$(UM)))
+endif
+
 .PHONY: report_modules
 report_modules:
-	@echo Using modules: $(call QUOTE_IF_NEEDED,$(UM))
-
+	@echo $(USING_MODULES_MSG)
 
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
@@ -756,7 +761,7 @@ else
 
 %.prebuild: prebuild
 	@echo ***Building $(notdir $(patsubst %/,%,$(call UNMANGLE_NO_ESCAPE,$(dir $*))))***
-	@cd "$(call UNMANGLE_NO_ESCAPE,$(dir $*))" && $(MAKE) --no-print-directory -f $(notdir $*) all
+	@cd "$(call TO_OS,$(call UNMANGLE_NO_ESCAPE,$(dir $*)))" && $(MAKE) --no-print-directory -f $(notdir $*) all
 
 $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 	@echo ***Building main application***
@@ -803,7 +808,7 @@ endif
 
 %.prebuild.clean:
 	@echo Cleaning $(abspath $(call UNMANGLE,$(dir $*)))
-	@cd "$(call UNMANGLE_NO_ESCAPE,$(dir $*))" && $(MAKE) --no-print-directory -f $(notdir $*) clean
+	cd "$(call TO_OS,$(call UNMANGLE_NO_ESCAPE,$(dir $*)))" && $(MAKE) --no-print-directory -f $(notdir $*) clean
 
 
 clean_common: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild.clean)
