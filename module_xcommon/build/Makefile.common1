@@ -661,7 +661,7 @@ $(if $(XCC_$(call LANG,$1)_FLAGS), $(XCC_$(call LANG,$1)_FLAGS), $(XCC_FLAGS))
 endef
 
 define make_flags
-$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS)) $(EXTRA_$(call LANG,$1)_FLAGS) -DCONFIG=$(CONFIG)
+$(if $(XCC_FLAGS_$1), $(XCC_FLAGS_$1)  $(TARGET_FLAGS) $(EXTRA_$(call LANG,$1)_FLAGS), $(call lang_flags, $1) $(TARGET_FLAGS)) $(EXTRA_$(call LANG,$1)_FLAGS) -DCONFIG=$(CONFIG)
 endef
 
 ifeq ($(WINFLAG),1)
@@ -736,11 +736,11 @@ report_modules:
 ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
 $(BIN_DIR)/$(APP_NAME).xe : $(XMOSUPDATE) $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
-	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
+	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(XCC_EXTRA_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 else
 $(BIN_DIR)/$(APP_NAME).xe : $(XMOSUPDATE) $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(ECLIPSE_CONFIG) $(BIN_DIR)/ report_modules
 	@echo Creating $(notdir $@)
-	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
+	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(XCC_EXTRA_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(call TO_OS,$(call DOTDOT,$x))) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),"$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))")) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),"$(call UNMANGLE,$(call DOTDOT,$x))")) -o "$(call TO_OS,$(call DOTDOT,$@))"
 endif
 
 ifeq ($(VERBOSE),1)
