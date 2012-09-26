@@ -97,7 +97,7 @@ ifeq ($(CONFIG),All)
 
 %.all:
 	@echo Building configuration $(CONFIG0)
-	@$(MAKE) -f $(CURRENT_MAKEFILE) BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
+	@$(MAKE) BIN_DIR=$(BIN_DIR0) CONFIG=$(CONFIG0) --no-print-directory all
 
 
 all: $(foreach config,$(ALL_CONFIGS),$(config).all)
