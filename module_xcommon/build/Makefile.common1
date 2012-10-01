@@ -80,6 +80,7 @@ FIXDEP = $(patsubst %.xc.d,%.d,$(patsubst %.c.d,%.d,$(patsubst %.cpp.d,%.d,$(pat
 
 ifeq ($(WINFLAG),1)
 CMDQUOTE="
+ECHOQUOTE="
 PATHSEP=;
 CP=copy $(subst /,\,$(1))
 XCP=xcopy $(subst /,\,$(1))
@@ -96,6 +97,7 @@ AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj.ex
 CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 else
 CMDQUOTE='
+ECHOQUOTE=\"
 SHELL=bash
 PATHSEP=:
 CP=cp $(1)
@@ -679,7 +681,7 @@ endif
 
 define OBJ_RULE
 $(call TO_OBJ,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(call UNMANGLE,$(XN_SOURCE_FILES)) | $(TARGET_DIR)/
-	@echo Compiling $(call UNMANGLE, $(notdir $1))
+	@echo Compiling $(call UNMANGLE_NO_ESCAPE, $(notdir $1))
 	cd $(TARGET_DIR) && $(XCC) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$1) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) $(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE)) -o $(CMDQUOTE)../$$@$(CMDQUOTE)
 endef
 
@@ -690,6 +692,9 @@ $(foreach x,$(SOURCE_FILES),$(eval $(call OBJ_RULE,$x)))
 ifeq ($(strip $(PREBUILD_MAKEFILES)),)
 NO_PREBUILD := 1
 endif
+
+QUOTE_IF_NEEDED_ITEM = $(if $(filter %$(CHAR2),$(subst $(CHAR2),$(CHAR2) ,$1)),$(ECHOQUOTE)$(subst $(CHAR2), ,$1)$(ECHOQUOTE),$1)
+QUOTE_IF_NEEDED = $(foreach x,$1,$(call QUOTE_IF_NEEDED_ITEM,$x))
 
 ifeq ($(strip $(UM)),)
 USING_MODULES_MSG = No modules used.

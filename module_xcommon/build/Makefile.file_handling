@@ -32,8 +32,4 @@ DOTDOT = $(if $(call IS_RELATIVE,$1),../$1,$1)
 SPLIT_UNQUOTED = $(strip $(subst $(QUOTE),,$(if $(filter $(QUOTE)%,$1),$1,$(subst $(CHAR2), ,$1))))
 HANDLE_QUOTES = $(strip $(foreach x,$(subst $(CHAR2)$(QUOTE),$(CHAR2) $(QUOTE),$(subst $(QUOTE)$(CHAR2), $(CHAR2),$(call MANGLE,$(1)))),$(call SPLIT_UNQUOTED,$x)))
 
-QUOTE_IF_NEEDED_ITEM = $(if $(filter %$(CHAR2),$(subst $(CHAR2),$(CHAR2) ,$1)),\"$(subst $(CHAR2), ,$1)\",$1)
-QUOTE_IF_NEEDED = $(foreach x,$1,$(call QUOTE_IF_NEEDED_ITEM,$x))
-
-
 QUOTE = "
