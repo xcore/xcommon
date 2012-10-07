@@ -18,10 +18,10 @@ BUILD_SUBDIRS := $(if $(filter all,$(BUILD_SUBDIRS)),$(wildcard app_*),$(BUILD_S
 
 BUILD_SUBDIRS := $(call HANDLE_QUOTES, $(BUILD_SUBDIRS))
 
-ifeq ($(NO_IGNORE_ERRORS),1)
-IGNORE_ERR=
-else
+ifeq ($(IGNORE_ERRORS),1)
 IGNORE_ERR=-
+else
+IGNORE_ERR=
 endif
 
 %.all:

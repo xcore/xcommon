@@ -79,6 +79,7 @@ endif
 FIXDEP = $(patsubst %.xc.d,%.d,$(patsubst %.c.d,%.d,$(patsubst %.cpp.d,%.d,$(patsubst %.s.d,%.d,$1))))
 
 ifeq ($(WINFLAG),1)
+JYTHON = (echo source $1>$(TARGET_DIR)/tmp.xta) & (echo exit >> $(TARGET_DIR)/tmp.xta) & (xta source $(TARGET_DIR)/tmp.xta)
 CMDQUOTE="
 ECHOQUOTE="
 PATHSEP=;
@@ -96,6 +97,9 @@ TO_OS=$(subst /,\,$(1))
 AUTO_PROJ = $(call TO_OS,$(subst \ , ,$(XCOMMON_DIR))/auto_proj/bin/auto_proj.exe)
 CHANGEDEP = "$(call TO_OS,$(subst \ , ,$(MODULE_XCOMMON_DIR))/build/changedep.exe)" "$(call TO_OS,$(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))" "$1 $(call TO_BUILD_DIR,$(call TO_OBJ, $2))" " ../" " ././" " ./../" " ./" > $1 & $(call RM, $(TARGET_DIR)/$(call FIXDEP,$(notdir $1)))
 else
+# Jython
+# This is a bit of a hack since the jython interpreter is contained in the xta
+JYTHON = echo "source $1">$(TARGET_DIR)/tmp.xta;echo "exit" >> $(TARGET_DIR)/tmp.xta;xta source $(TARGET_DIR)/tmp.xta
 CMDQUOTE='
 ECHOQUOTE=\"
 SHELL=bash
@@ -115,9 +119,6 @@ endif
 
 .SUFFIXES:
 
-# Jython
-# This is a bit of a hack since the jython interpreter is contained in the xta
-JYTHON = echo "source $1">$(TARGET_DIR)/tmp.xta;echo "exit" >> $(TARGET_DIR)/tmp.xta;xta source $(TARGET_DIR)/tmp.xta
 
 # General utility function
 
@@ -373,7 +374,10 @@ $$(if $$(call WILDCARD,$$(CURRENT_MODULE_DIR)/*),,$$(error Cannot find module `$
 VERSION :=
 GEN_DIR := $$(TARGET_DIR)/generated/$$(CURRENT_MODULE)
 GENERATED_FILES :=
+_CURRENT_MODULE_DIR := $$(CURRENT_MODULE_DIR)
+CURRENT_MODULE_DIR := $$(call UNMANGLE,$(CURRENT_MODULE_DIR))
 -include $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/VERSION
+CURRENT_MODULE_DIR := $$(_CURRENT_MODULE_DIR)
 REPO := $$(notdir $$(abspath $$(call UNMANGLE,$$(CURRENT_MODULE_DIR))/..))
 REPO := $$(if $$(filter $$(REPO),$$(ECLIPSE_PROJECTS)),,$$(REPO))
 REPO := $$(if $$(filter $$(REPO),$$(CURRENT_REPO)),,$$(REPO))
@@ -603,7 +607,7 @@ $(BASE_DIR)/bin/:
 $(GEN_DIRS):
 	@-$(call MKDIR,$@) > $(NULL)
 
-$(ALL_GENERATED_FILES) : | $(GEN_DIRS)
+$(ALL_GENERATED_FILES) : | $(GEN_DIRS) $(BIN_DIR)
 
 define GEN_DIR_DEF
 $1 : GEN_DIR = $(patsubst %/,%,$(dir $1))
@@ -666,8 +670,10 @@ else
 NOP = echo -n
 endif
 
+NON_GEN_HEADER_FILES = $(filter-out $(ALL_GENERATED_FILES),$(HEADER_FILES))
 
-$(HEADER_FILES):
+
+$(NON_GEN_HEADER_FILES):
 	@$(NOP)
 
 
