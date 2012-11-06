@@ -30,6 +30,8 @@ APP_NAME := $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
 endif
 APP_NAME ?= $(call UNMANGLE,$(notdir $(call MANGLE,$(abspath .))))
 
+APP_NAME := $(subst $(SP),\$(SP),$(subst \$(SP),$(SP),$(subst $(QUOTE),,$(strip $(APP_NAME)))))
+
 CONFIG_EXT = $(if $(CONFIG),$(if $(filter Default Release,$(CONFIG)),,_$(CONFIG)),)
 
 ifneq ($(CONFIG),All)
