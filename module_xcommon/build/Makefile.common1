@@ -27,6 +27,10 @@
 #               files are kept in. . Defaults to $(TARGET).
 #
 ##########################################
+USE_LLVM_BITCODE ?= 0
+LLVM_LD ?= llvm-ld
+LLVM_LLC ?= llc
+
 _COMMON1:=1
 export _COMMON1
 -include Makefile
@@ -685,10 +689,38 @@ endif
 	$(if $(filter $@,$(GEN_HEADER_FILES)),,@echo WARNING: Include file $@ missing)
 	@echo "Missing include file" > $(FAKE_INC_DIR)/$(notdir $@)
 
+
+ifeq ($(USE_LLVM_BITCODE),1)
+
+define obj_command
+$(if $(filter C CPP,$(call LANG,$1)),-S -Xcompiler-c -emit-llvm-bc,$(if $(filter XC,$(call LANG,$1)),-S -Xcompiler-xc -emit-llvm-bc,-c))
+endef
+
+LLVM_ALL_BC_FILE=$(TARGET_DIR)/all.llvm.bc
+LLVM_ALL_S_FILE=$(TARGET_DIR)/all.llvm.s
+LLVM_ALL_OBJ_FILE=$(TARGET_DIR)/all.llvm.o
+REAL_OBJ_FILES=$(filter-out %.xc.o %.c.o %.cpp.o,$(OBJ_FILES)) $(LLVM_ALL_OBJ_FILE)
+LLVM_OBJ_FILES=$(filter-out $(REAL_OBJ_FILES),$(OBJ_FILES))
+
+
+$(LLVM_ALL_OBJ_FILE): $(LLVM_OBJ_FILES)
+	@echo Compiling LLVM bitcode
+	$(LLVM_LD) -disable-internalize -disable-opt $(LLVM_OBJ_FILES) -b $(LLVM_ALL_BC_FILE)
+	$(LLVM_LLC) $(LLVM_ALL_BC_FILE) -o $(LLVM_ALL_S_FILE)
+	$(XCC) -c $(TARGET_FLAGS) $(LLVM_ALL_S_FILE) -o $(LLVM_ALL_OBJ_FILE)
+else
+
+obj_command=-c
+
+REAL_OBJ_FILES=$(OBJ_FILES)
+
+endif
+
+
 define OBJ_RULE
 $(call TO_OBJ,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(call UNMANGLE,$(XN_SOURCE_FILES)) | $(TARGET_DIR)/
 	@echo Compiling $(call UNMANGLE_NO_ESCAPE, $(notdir $1))
-	cd $(TARGET_DIR) && $(XCC) -c $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$1) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) $(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE)) -o $(CMDQUOTE)../$$@$(CMDQUOTE)
+	cd $(TARGET_DIR) && $(XCC) $(call obj_command,$1) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$1) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) $(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE)) -o $(CMDQUOTE)../$$@$(CMDQUOTE)
 endef
 
 $(foreach x,$(SOURCE_FILES),$(eval $(call OBJ_RULE,$x)))
@@ -712,24 +744,20 @@ endif
 report_modules:
 	@echo $(USING_MODULES_MSG)
 
-ifeq ($(NO_PREBUILD),1)
 ifeq ($(VERBOSE),1)
-$(BIN_DIR)/$(APP_NAME).xe : $(XMOSUPDATE) $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(BIN_DIR)/ report_modules
-	cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(XCC_EXTRA_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$x))$(CMDQUOTE)) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(CMDQUOTE)$(call UNMANGLE,$(call DOTDOT,$x))$(CMDQUOTE))) -o $(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$@))$(CMDQUOTE)
+AT =
 else
-$(BIN_DIR)/$(APP_NAME).xe : $(XMOSUPDATE) $(HEADER_WARNINGS) $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(BIN_DIR)/ report_modules
-	@echo Creating $(notdir $@)
-	@cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(XCC_EXTRA_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(OBJ_FILES),$(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$x))$(CMDQUOTE)) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(CMDQUOTE)$(call UNMANGLE,$(call DOTDOT,$x))$(CMDQUOTE))) -o $(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$@))$(CMDQUOTE)
+AT = @
 endif
 
-ifeq ($(VERBOSE),1)
-$(LIB_DIR)/%.a :  $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) |$(LIB_DIR)/
-	cd $(TARGET_DIR) && $(XAR) cru ../$@ $(addprefix ../, $(OBJ_FILES)) 
-else
+ifeq ($(NO_PREBUILD),1)
+$(BIN_DIR)/$(APP_NAME).xe : $(XMOSUPDATE) $(HEADER_WARNINGS) $(REAL_OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  $(XTA_SOURCE_FILES) $(call UNMANGLE,$(LIB_FILES)) | $(BIN_DIR)/ report_modules
+	@echo Creating $(notdir $@)
+	$(AT)cd $(TARGET_DIR) && $(XCC) $(TARGET_FLAGS) $(XCC_MAP_FLAGS) $(XCC_EXTRA_MAP_FLAGS) $(LIB_FLAGS) $(foreach x,$(REAL_OBJ_FILES),$(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$x))$(CMDQUOTE)) $(call TO_OS,$(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE))) $(call TO_OS,$(foreach x,$(XTA_SOURCE_FILES),$(CMDQUOTE)$(call UNMANGLE,$(call DOTDOT,$x))$(CMDQUOTE))) -o $(CMDQUOTE)$(call TO_OS,$(call DOTDOT,$@))$(CMDQUOTE)
+
 $(LIB_DIR)/%.a :  $(OBJ_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES))  |$(LIB_DIR)/
 	@echo Creating $(notdir $@)
-	@cd $(TARGET_DIR) && $(XAR) cru ../$@ $(addprefix ../, $(OBJ_FILES)) 
-endif
+	$(AT)cd $(TARGET_DIR) && $(XAR) cru ../$@ $(addprefix ../, $(OBJ_FILES))
 
 
 else
