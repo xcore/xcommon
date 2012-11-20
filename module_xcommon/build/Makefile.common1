@@ -776,7 +776,7 @@ $(BIN_DIR)/%.xe: $(foreach x, $(PREBUILD_MAKEFILES), $x.prebuild)
 endif
 
 define DEP_RULE
-$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(GEN_HEADER_FILES) | $(TARGET_DIR)/
+$(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(GEN_HEADER_FILES) $(call UNMANGLE,$(XN_SOURCE_FILES)) | $(TARGET_DIR)/
 	@echo Creating dependencies for $(call UNMANGLE_NO_ESCAPE,$(notdir $1))
 	$(AT)cd $(TARGET_DIR) && $(XCC) -MMD -E $(call make_flags,$1) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
