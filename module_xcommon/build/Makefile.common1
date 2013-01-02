@@ -537,9 +537,12 @@ define HWARNING_RULE
 .PHONY: $1.header_warning
 $1.header_warning:
 	@echo WARNING: Duplicate header found: $1
-	@echo WARNING: Found in: $(foreach x,$(filter %$1,$(HEADER_FILES)),$(call UNMANGLE,$x))
+	@echo WARNING: Found in: $$(foreach x,$$(filter %$1,$$(HEADER_FILES)),$$(call UNMANGLE,$x))
 endef
 
+ifeq ($(words $(NOTDIR_HEADER_FILES)),$(words $(sort $(NOTDIR_HEADER_FILES))))
+HEADER_WARNINGS=
+else
 IS_DUP_HEADER=$(strip $(filter $(1)$(1),$(subst $(SP),,$(filter $1,$(NOTDIR_HEADER_FILES)))))
 
 DUP_HEADERS = $(foreach x,$(sort $(NOTDIR_HEADER_FILES)),$(if $(call IS_DUP_HEADER,$x),$x,))
@@ -547,6 +550,7 @@ DUP_HEADERS = $(foreach x,$(sort $(NOTDIR_HEADER_FILES)),$(if $(call IS_DUP_HEAD
 HEADER_WARNINGS := $(foreach x,$(DUP_HEADERS),$x.header_warning)
 
 $(foreach x,$(DUP_HEADERS),$(eval $(call HWARNING_RULE,$x)))
+endif
 
 HEADER_DEP_FILES := $(foreach x,$(HEADER_FILES:.h=.dh),$(call TO_BUILD_DIR, $x))
 
@@ -719,8 +723,8 @@ endif
 
 define OBJ_RULE
 $(call TO_OBJ,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1) $(call UNMANGLE,$(XN_SOURCE_FILES)) | $(TARGET_DIR)/
-	@echo Compiling $(call UNMANGLE_NO_ESCAPE, $(notdir $1))
-	cd $(TARGET_DIR) && $(XCC) $(call obj_command,$1) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(call make_flags,$1) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) $(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE)) -o $(CMDQUOTE)../$$@$(CMDQUOTE)
+	@echo Compiling $$(call UNMANGLE_NO_ESCAPE, $(notdir $1))
+	cd $(TARGET_DIR) && $(XCC) $$(call obj_command,$1) $$(OPTIONAL_HEADER_FLAGS) $$(INCLUDE_FLAGS) $$(call make_flags,$1) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) $(foreach x,$(XN_SOURCE_FILES),$(CMDQUOTE)$(call DOTDOT,$(call UNMANGLE_NO_ESCAPE,$x))$(CMDQUOTE)) -o $(CMDQUOTE)../$$@$(CMDQUOTE)
 endef
 
 $(foreach x,$(SOURCE_FILES),$(eval $(call OBJ_RULE,$x)))
@@ -777,8 +781,8 @@ endif
 
 define DEP_RULE
 $(call TO_DEP,$(call TO_BUILD_DIR,$1)) : $(call UNMANGLE,$1)  $(XMOSUPDATE) $(GEN_HEADER_FILES) | $(TARGET_DIR)/
-	@echo Creating dependencies for $(call UNMANGLE_NO_ESCAPE,$(notdir $1))
-	$(AT)cd $(TARGET_DIR) && $(XCC) -MMD -E $(call make_flags,$1) $(OPTIONAL_HEADER_FLAGS) $(INCLUDE_FLAGS) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) > $(NULL)
+	@echo Creating dependencies for $$(call UNMANGLE_NO_ESCAPE,$(notdir $1))
+	$(AT)cd $(TARGET_DIR) && $(XCC) -MMD -E $$(call make_flags,$1) $$(OPTIONAL_HEADER_FLAGS) $$(INCLUDE_FLAGS) $(CMDQUOTE)$$(call DOTDOT,$$<)$(CMDQUOTE) > $(NULL)
 	@-$$(call MKDIR, $$(dir $$@))
 	@$$(call CHANGEDEP,$$@,$1)
 	@$(NOP)
